@@ -41,6 +41,7 @@ func (e *Impl) AppendCode(code StatusCode, message string) error {
 }
 
 func (e *Impl) BuildError(c *gin.Context, code StatusCode, title, message any) models.ErrorResponse {
+
 	if c == nil {
 		return models.ErrorResponse{
 			Status: ContextIsNil.String(),
@@ -50,7 +51,7 @@ func (e *Impl) BuildError(c *gin.Context, code StatusCode, title, message any) m
 
 	if err := validate(title, message); err != nil {
 		return models.ErrorResponse{
-			Status: InternalServerError.String(),
+			Status: BadRequest.String(),
 			Error:  models.ErrorDetail{Title: "Invalid", Message: err.Error()},
 		}
 	}
