@@ -1,4 +1,4 @@
-package test
+package spond_test
 
 import (
 	"bytes"
@@ -30,7 +30,8 @@ func TestBuildError_RealImplementation(t *testing.T) {
 
 	for _, tt := range testsBuildError {
 		t.Run(fmt.Sprintf("%s%s", "TestBuildError_RealImplementation: ", tt.name), func(t *testing.T) {
-			out := impl.BuildError(tt.c, tt.code, tt.title, tt.message)
+			ctx := tt.c()
+			out := impl.BuildError(ctx, tt.code, tt.title, tt.message)
 			assert.Equal(t, tt.expected, out, "BuildError should return expected response for %s", tt.name)
 		})
 	}

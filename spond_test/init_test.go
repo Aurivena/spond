@@ -1,4 +1,4 @@
-package test
+package spond_test
 
 import (
 	"github.com/gin-gonic/gin"
@@ -9,7 +9,7 @@ import (
 
 type testBuildErrorResponse struct {
 	name     string
-	c        *gin.Context
+	c        func() *gin.Context
 	title    any
 	message  any
 	code     spond.StatusCode
@@ -23,7 +23,10 @@ type testAppendCode struct {
 	wantErr error
 }
 
-var c, _ = gin.CreateTestContext(httptest.NewRecorder())
+func newTestContext() *gin.Context {
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	return ctx
+}
 
 var invalidMessage = func() {}
 var testStruct = struct {
@@ -70,7 +73,7 @@ var testsAppendCode = []testAppendCode{
 var testsBuildError = []testBuildErrorResponse{
 	{
 		name:    "c == nil",
-		c:       nil,
+		c:       func() *gin.Context { return nil },
 		code:    spond.Success,
 		title:   "пустой",
 		message: "пустой",
@@ -84,7 +87,7 @@ var testsBuildError = []testBuildErrorResponse{
 	},
 	{
 		name:    "правильный ответ без ошибок",
-		c:       c,
+		c:       newTestContext,
 		code:    spond.ResourceCreated,
 		title:   "пустой",
 		message: "пустой",
@@ -98,7 +101,7 @@ var testsBuildError = []testBuildErrorResponse{
 	},
 	{
 		name:    "invalid title",
-		c:       c,
+		c:       newTestContext,
 		code:    spond.Success,
 		title:   invalidMessage,
 		message: "пустой",
@@ -112,7 +115,7 @@ var testsBuildError = []testBuildErrorResponse{
 	},
 	{
 		name:    "invalid message",
-		c:       c,
+		c:       newTestContext,
 		code:    spond.Success,
 		title:   "пустой",
 		message: invalidMessage,
@@ -126,7 +129,7 @@ var testsBuildError = []testBuildErrorResponse{
 	},
 	{
 		name:    "правильно отдает ответ с title = struct",
-		c:       c,
+		c:       newTestContext,
 		code:    spond.Success,
 		title:   testStruct,
 		message: "пустой",
@@ -140,7 +143,7 @@ var testsBuildError = []testBuildErrorResponse{
 	},
 	{
 		name:    "правильно отдает ответ с message = struct",
-		c:       c,
+		c:       newTestContext,
 		code:    spond.Success,
 		title:   "пустой",
 		message: testStruct,
@@ -154,7 +157,7 @@ var testsBuildError = []testBuildErrorResponse{
 	},
 	{
 		name:    "правильно отдает ответ с message = struct и title = struct",
-		c:       c,
+		c:       newTestContext,
 		code:    spond.Success,
 		title:   testStruct,
 		message: testStruct,

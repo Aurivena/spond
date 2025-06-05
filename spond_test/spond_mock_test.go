@@ -1,4 +1,4 @@
-package test
+package spond_test
 
 import (
 	"encoding/json"
@@ -51,6 +51,7 @@ func TestBuildError_Mock(t *testing.T) {
 
 	for _, tt := range testsBuildError {
 		t.Run(fmt.Sprintf("%s%s", "TestBuildError_Mock: ", tt.name), func(t *testing.T) {
+			ctx := tt.c()
 			titleArg := tt.title
 			messageArg := tt.message
 
@@ -61,9 +62,9 @@ func TestBuildError_Mock(t *testing.T) {
 				messageArg = mock.Anything
 			}
 
-			m.On("BuildError", tt.c, tt.code, titleArg, messageArg).Return(tt.expected).Once()
+			m.On("BuildError", ctx, tt.code, titleArg, messageArg).Return(tt.expected).Once()
 
-			out := m.BuildError(tt.c, tt.code, tt.title, tt.message)
+			out := m.BuildError(ctx, tt.code, tt.title, tt.message)
 			assert.Equal(t, tt.expected, out, "BuildError should return expected response for %s", tt.name)
 			m.AssertExpectations(t)
 		})
