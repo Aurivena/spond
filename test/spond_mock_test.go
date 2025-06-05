@@ -29,7 +29,7 @@ func (m *mockSpond) SayHello() {
 	m.Called()
 }
 
-func TestAppendCode(t *testing.T) {
+func TestAppendCode_Mock(t *testing.T) {
 	m := new(mockSpond)
 
 	tests := []struct {
@@ -39,31 +39,31 @@ func TestAppendCode(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "UnknownCode666",
+			name:    "TestAppendCode_Mock: UnknownCode666",
 			code:    666,
 			message: "TestCode",
 			wantErr: nil,
 		},
 		{
-			name:    "SuccessCodeExists",
+			name:    "TestAppendCode_Mock: SuccessCodeExists",
 			code:    spond.Success,
 			message: "Success",
 			wantErr: spond.ErrorAppendCode,
 		},
 		{
-			name:    "BadRequestCodeExists",
+			name:    "TestAppendCode_Mock: BadRequestCodeExists",
 			code:    spond.BadRequest,
 			message: "TestCode",
 			wantErr: spond.ErrorAppendCode,
 		},
 		{
-			name:    "UnknownCode999",
+			name:    "TestAppendCode_Mock: UnknownCode999",
 			code:    999,
 			message: "TestCode",
 			wantErr: nil,
 		},
 		{
-			name:    "UnknownCode7892",
+			name:    "TestAppendCode_Mock: UnknownCode7892",
 			code:    7892,
 			message: "TestCode",
 			wantErr: nil,
@@ -84,16 +84,7 @@ func TestAppendCode(t *testing.T) {
 	}
 }
 
-type testBuildErrorResponse struct {
-	name     string
-	c        *gin.Context
-	title    any
-	message  any
-	code     spond.StatusCode
-	expected models.ErrorResponse
-}
-
-func TestBuildError(t *testing.T) {
+func TestBuildError_Mock(t *testing.T) {
 	m := new(mockSpond)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 
@@ -108,7 +99,7 @@ func TestBuildError(t *testing.T) {
 
 	tests := []testBuildErrorResponse{
 		{
-			name:    "c == nil",
+			name:    "TestBuildError_Mock: c == nil",
 			c:       nil,
 			code:    spond.Success,
 			title:   "пустой",
@@ -122,7 +113,7 @@ func TestBuildError(t *testing.T) {
 			},
 		},
 		{
-			name:    "правильный ответ без ошибок",
+			name:    "TestBuildError_Mock: правильный ответ без ошибок",
 			c:       c,
 			code:    spond.ResourceCreated,
 			title:   "пустой",
@@ -136,7 +127,7 @@ func TestBuildError(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid title",
+			name:    "TestBuildError_Mock: invalid title",
 			c:       c,
 			code:    spond.Success,
 			title:   invalidMessage,
@@ -150,7 +141,7 @@ func TestBuildError(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid message",
+			name:    "TestBuildError_Mock: invalid message",
 			c:       c,
 			code:    spond.Success,
 			title:   "пустой",
@@ -164,7 +155,7 @@ func TestBuildError(t *testing.T) {
 			},
 		},
 		{
-			name:    "правильно отдает ответ с title = struct",
+			name:    "TestBuildError_Mock: правильно отдает ответ с title = struct",
 			c:       c,
 			code:    spond.Success,
 			title:   testStruct,
@@ -178,7 +169,7 @@ func TestBuildError(t *testing.T) {
 			},
 		},
 		{
-			name:    "правильно отдает ответ с message = struct",
+			name:    "TestBuildError_Mock: правильно отдает ответ с message = struct",
 			c:       c,
 			code:    spond.Success,
 			title:   "пустой",
@@ -192,7 +183,7 @@ func TestBuildError(t *testing.T) {
 			},
 		},
 		{
-			name:    "правильно отдает ответ с message = struct и title = struct",
+			name:    "TestBuildError_Mock: правильно отдает ответ с message = struct и title = struct",
 			c:       c,
 			code:    spond.Success,
 			title:   testStruct,
@@ -226,8 +217,8 @@ func TestBuildError(t *testing.T) {
 	}
 }
 
-func TestSayHello(t *testing.T) {
-	t.Run("CallSayHello", func(t *testing.T) {
+func TestSayHello_Mock(t *testing.T) {
+	t.Run("TestSayHello_Mock: CallSayHello", func(t *testing.T) {
 		m := new(mockSpond)
 		m.On("SayHello").Return().Once()
 

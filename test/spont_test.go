@@ -1,13 +1,24 @@
 package test
 
 import (
+	"bytes"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"spond"
 	"spond/models"
+	"sync"
 	"testing"
 )
+
+type testBuildErrorResponse struct {
+	name     string
+	c        *gin.Context
+	title    any
+	message  any
+	code     spond.StatusCode
+	expected models.ErrorResponse
+}
 
 func TestAppendCode_RealImplementation(t *testing.T) {
 	impl := spond.NewImpl()
@@ -19,31 +30,31 @@ func TestAppendCode_RealImplementation(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "UnknownCode666",
+			name:    "TestAppendCode_RealImplementation: UnknownCode666",
 			code:    666,
 			message: "TestCode",
 			wantErr: nil,
 		},
 		{
-			name:    "SuccessCodeExists",
+			name:    "TestAppendCode_RealImplementation: SuccessCodeExists",
 			code:    spond.Success,
 			message: "Success",
 			wantErr: spond.ErrorAppendCode,
 		},
 		{
-			name:    "BadRequestCodeExists",
+			name:    "TestAppendCode_RealImplementation: BadRequestCodeExists",
 			code:    spond.BadRequest,
 			message: "TestCode",
 			wantErr: spond.ErrorAppendCode,
 		},
 		{
-			name:    "UnknownCode999",
+			name:    "TestAppendCode_RealImplementation: UnknownCode999",
 			code:    999,
 			message: "TestCode",
 			wantErr: nil,
 		},
 		{
-			name:    "UnknownCode7892",
+			name:    "TestAppendCode_RealImplementation: UnknownCode7892",
 			code:    7892,
 			message: "TestCode",
 			wantErr: nil,
@@ -78,7 +89,7 @@ func TestBuildError_RealImplementation(t *testing.T) {
 
 	tests := []testBuildErrorResponse{
 		{
-			name:    "c == nil",
+			name:    "TestBuildError_RealImplementation: c == nil",
 			c:       nil,
 			code:    spond.Success,
 			title:   "пустой",
@@ -92,7 +103,7 @@ func TestBuildError_RealImplementation(t *testing.T) {
 			},
 		},
 		{
-			name:    "правильный ответ без ошибок",
+			name:    "TestBuildError_RealImplementation: правильный ответ без ошибок",
 			c:       c,
 			code:    spond.ResourceCreated,
 			title:   "пустой",
@@ -106,7 +117,7 @@ func TestBuildError_RealImplementation(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid title",
+			name:    "TestBuildError_RealImplementation: invalid title",
 			c:       c,
 			code:    spond.Success,
 			title:   invalidMessage,
@@ -120,7 +131,7 @@ func TestBuildError_RealImplementation(t *testing.T) {
 			},
 		},
 		{
-			name:    "invalid message",
+			name:    "TestBuildError_RealImplementation: invalid message",
 			c:       c,
 			code:    spond.Success,
 			title:   "пустой",
@@ -134,7 +145,7 @@ func TestBuildError_RealImplementation(t *testing.T) {
 			},
 		},
 		{
-			name:    "правильно отдает ответ с title = struct",
+			name:    "TestBuildError_RealImplementation: правильно отдает ответ с title = struct",
 			c:       c,
 			code:    spond.Success,
 			title:   testStruct,
@@ -148,7 +159,7 @@ func TestBuildError_RealImplementation(t *testing.T) {
 			},
 		},
 		{
-			name:    "правильно отдает ответ с message = struct",
+			name:    "TestBuildError_RealImplementation: правильно отдает ответ с message = struct",
 			c:       c,
 			code:    spond.Success,
 			title:   "пустой",
@@ -162,7 +173,7 @@ func TestBuildError_RealImplementation(t *testing.T) {
 			},
 		},
 		{
-			name:    "правильно отдает ответ с message = struct и title = struct",
+			name:    "TestBuildError_RealImplementation: правильно отдает ответ с message = struct и title = struct",
 			c:       c,
 			code:    spond.Success,
 			title:   testStruct,
@@ -183,4 +194,18 @@ func TestBuildError_RealImplementation(t *testing.T) {
 			assert.Equal(t, tt.expected, out, "BuildError should return expected response for %s", tt.name)
 		})
 	}
+}
+
+func TestSayHello_RealImplementation(t *testing.T) {
+	t.Run("TestSayHello_RealImplementation: CallSayHello", func(t *testing.T) {
+		var buf bytes.Buffer
+		impl := spond.Impl{
+			StatusMessages: make(map[spond.StatusCode]string),
+			Out:            &buf,
+			Mu:             &sync.RWMutex{},
+		}
+
+		impl.SayHello()
+		assert.Equal(t, "Hello it Spond!\n", buf.String(), `Функция должна была сказать Hello it Spond!\n`)
+	})
 }
