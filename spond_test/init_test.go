@@ -2,18 +2,16 @@ package spond_test
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http/httptest"
 	"spond"
-	"spond/models"
+	"spond/faults"
 )
 
 type testBuildErrorResponse struct {
 	name     string
-	c        func() *gin.Context
 	title    any
 	message  any
 	code     spond.StatusCode
-	expected models.ErrorResponse
+	expected spond.ErrorResponse
 }
 
 type testAppendCode struct {
@@ -23,9 +21,17 @@ type testAppendCode struct {
 	wantErr error
 }
 
-func newTestContext() *gin.Context {
-	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
-	return ctx
+type testSendSuccessAndError struct {
+	name     string
+	c        *gin.Context
+	status   spond.StatusCode
+	output   any
+	expected spond.SendSuccessOutput
+}
+
+type testSendError struct {
+	Status string            `json:"status"`
+	Error  spond.ErrorDetail `json:"error"`
 }
 
 var invalidMessage = func() {}
@@ -48,13 +54,13 @@ var testsAppendCode = []testAppendCode{
 		name:    "TestAppendCode_RealImplementation: SuccessCodeExists",
 		code:    spond.Success,
 		message: "Success",
-		wantErr: spond.ErrorAppendCode,
+		wantErr: faults.ErrorAppendCode,
 	},
 	{
 		name:    "TestAppendCode_RealImplementation: BadRequestCodeExists",
 		code:    spond.BadRequest,
 		message: "TestCode",
-		wantErr: spond.ErrorAppendCode,
+		wantErr: faults.ErrorAppendCode,
 	},
 	{
 		name:    "TestAppendCode_RealImplementation: UnknownCode999",
@@ -72,28 +78,13 @@ var testsAppendCode = []testAppendCode{
 
 var testsBuildError = []testBuildErrorResponse{
 	{
-		name:    "c == nil",
-		c:       func() *gin.Context { return nil },
-		code:    spond.Success,
-		title:   "пустой",
-		message: "пустой",
-		expected: models.ErrorResponse{
-			Status: spond.ContextIsNil.String(),
-			Error: models.ErrorDetail{
-				Title:   "",
-				Message: "",
-			},
-		},
-	},
-	{
 		name:    "правильный ответ без ошибок",
-		c:       newTestContext,
 		code:    spond.ResourceCreated,
 		title:   "пустой",
 		message: "пустой",
-		expected: models.ErrorResponse{
-			Status: spond.ResourceCreated.String(),
-			Error: models.ErrorDetail{
+		expected: spond.ErrorResponse{
+			Status: spond.ResourceCreated,
+			Error: spond.ErrorDetail{
 				Title:   "пустой",
 				Message: "пустой",
 			},
@@ -101,55 +92,52 @@ var testsBuildError = []testBuildErrorResponse{
 	},
 	{
 		name:    "invalid title",
-		c:       newTestContext,
 		code:    spond.Success,
 		title:   invalidMessage,
 		message: "пустой",
-		expected: models.ErrorResponse{
-			Status: spond.BadRequest.String(),
-			Error: models.ErrorDetail{
-				Title:   "Invalid",
-				Message: "title invalid",
+		expected: spond.ErrorResponse{
+			Status: spond.BadRequest,
+			Error: spond.ErrorDetail{
+				Title:   faults.Invalid,
+				Message: faults.TitleInvalid,
 			},
 		},
 	},
 	{
 		name:    "invalid message",
-		c:       newTestContext,
 		code:    spond.Success,
 		title:   "пустой",
 		message: invalidMessage,
-		expected: models.ErrorResponse{
-			Status: spond.BadRequest.String(),
-			Error: models.ErrorDetail{
-				Title:   "Invalid",
-				Message: "message invalid",
+		expected: spond.ErrorResponse{
+			Status: spond.BadRequest,
+			Error: spond.ErrorDetail{
+				Title:   faults.Invalid,
+				Message: faults.MessageInvalid,
 			},
 		},
 	},
 	{
 		name:    "правильно отдает ответ с title = struct",
-		c:       newTestContext,
 		code:    spond.Success,
 		title:   testStruct,
 		message: "пустой",
-		expected: models.ErrorResponse{
-			Status: spond.Success.String(),
-			Error: models.ErrorDetail{
+		expected: spond.ErrorResponse{
+			Status: spond.Success,
+			Error: spond.ErrorDetail{
 				Title:   testStruct,
 				Message: "пустой",
 			},
 		},
 	},
 	{
-		name:    "правильно отдает ответ с message = struct",
-		c:       newTestContext,
+		name: "правильно отдает ответ с message = struct",
+
 		code:    spond.Success,
 		title:   "пустой",
 		message: testStruct,
-		expected: models.ErrorResponse{
-			Status: spond.Success.String(),
-			Error: models.ErrorDetail{
+		expected: spond.ErrorResponse{
+			Status: spond.Success,
+			Error: spond.ErrorDetail{
 				Title:   "пустой",
 				Message: testStruct,
 			},
@@ -157,15 +145,71 @@ var testsBuildError = []testBuildErrorResponse{
 	},
 	{
 		name:    "правильно отдает ответ с message = struct и title = struct",
-		c:       newTestContext,
 		code:    spond.Success,
 		title:   testStruct,
 		message: testStruct,
-		expected: models.ErrorResponse{
-			Status: spond.Success.String(),
-			Error: models.ErrorDetail{
+		expected: spond.ErrorResponse{
+			Status: spond.Success,
+			Error: spond.ErrorDetail{
 				Title:   testStruct,
 				Message: testStruct,
+			},
+		},
+	},
+}
+
+var testsSendSuccess = []testSendSuccessAndError{
+	{
+		name:   "success",
+		status: spond.Success,
+		output: float64(222),
+		expected: spond.SendSuccessOutput{
+			Status: spond.Success.String(),
+			Output: float64(222),
+		},
+	},
+	{
+		name:   "testStruct",
+		status: spond.Success,
+		output: testStruct,
+		expected: spond.SendSuccessOutput{
+			Status: spond.Success.String(),
+			Output: map[string]interface{}{"Age": float64(666), "Name": "Aurivena"},
+		},
+	},
+	{
+		name:   "пустой ответ",
+		status: spond.Success,
+		output: nil,
+		expected: spond.SendSuccessOutput{
+			Status: spond.Success.String(),
+			Output: nil,
+		},
+	},
+}
+
+var testsSendError = []testSendSuccessAndError{
+	{
+		name:   "BadRequest",
+		status: spond.BadRequest,
+		output: float64(222),
+		expected: spond.SendSuccessOutput{
+			Status: spond.BadRequest.String(),
+			Output: spond.ErrorDetail{
+				Title:   "Ошибка",
+				Message: float64(222),
+			},
+		},
+	},
+	{
+		name:   "testStruct",
+		status: spond.InternalServerError,
+		output: nil,
+		expected: spond.SendSuccessOutput{
+			Status: spond.InternalServerError.String(),
+			Output: spond.ErrorDetail{
+				Title:   "Ошибка",
+				Message: nil,
 			},
 		},
 	},

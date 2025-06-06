@@ -2,6 +2,26 @@ package spond
 
 import "fmt"
 
+type SendErrorOutput struct {
+	Status string      `json:"status"`
+	Error  ErrorDetail `json:"error"`
+}
+
+type SendSuccessOutput struct {
+	Status string `json:"status"`
+	Output any    `json:"error"`
+}
+
+type ErrorResponse struct {
+	Status StatusCode  `json:"status"`
+	Error  ErrorDetail `json:"error"`
+}
+
+type ErrorDetail struct {
+	Title   any `json:"title"`
+	Message any `json:"message"`
+}
+
 type StatusCode int
 
 const (
@@ -44,6 +64,19 @@ var statusMessages = map[StatusCode]string{
 	UnsupportedMediaType:  "UnsupportedMediaType",
 	InternalServerError:   "InternalServerError",
 	ContextIsNil:          "ContextIsNil",
+}
+
+func (e StatusCode) mapToHTTPStatus() StatusCode {
+	switch {
+	case e >= 100 && e < 527:
+		return e
+	case e >= 4000 && e < 5000:
+		return 400
+	case e >= 5000 && e < 6000:
+		return 500
+	default:
+		return 500
+	}
 }
 
 func (e StatusCode) String() string {

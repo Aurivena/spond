@@ -3,11 +3,9 @@ package spond_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"spond"
-	"spond/models"
 	"testing"
 )
 
@@ -20,9 +18,9 @@ func (m *mockSpond) AppendCode(code spond.StatusCode, msg any) error {
 	return args.Error(0)
 }
 
-func (m *mockSpond) BuildError(c *gin.Context, code spond.StatusCode, title, message any) models.ErrorResponse {
-	args := m.Called(c, code, title, message)
-	return args.Get(0).(models.ErrorResponse)
+func (m *mockSpond) BuildError(code spond.StatusCode, title, message any) spond.ErrorResponse {
+	args := m.Called(code, title, message)
+	return args.Get(0).(spond.ErrorResponse)
 }
 
 func (m *mockSpond) SayHello() {
@@ -51,7 +49,6 @@ func TestBuildError_Mock(t *testing.T) {
 
 	for _, tt := range testsBuildError {
 		t.Run(fmt.Sprintf("%s%s", "TestBuildError_Mock: ", tt.name), func(t *testing.T) {
-			ctx := tt.c()
 			titleArg := tt.title
 			messageArg := tt.message
 
@@ -62,9 +59,9 @@ func TestBuildError_Mock(t *testing.T) {
 				messageArg = mock.Anything
 			}
 
-			m.On("BuildError", ctx, tt.code, titleArg, messageArg).Return(tt.expected).Once()
+			m.On("BuildError", tt.code, titleArg, messageArg).Return(tt.expected).Once()
 
-			out := m.BuildError(ctx, tt.code, tt.title, tt.message)
+			out := m.BuildError(tt.code, tt.title, tt.message)
 			assert.Equal(t, tt.expected, out, "BuildError should return expected response for %s", tt.name)
 			m.AssertExpectations(t)
 		})
