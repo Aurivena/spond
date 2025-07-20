@@ -2,25 +2,26 @@ package spond_test
 
 import (
 	"encoding/json"
-	"fmt"
+	"fmt"	"spond"
+	"spond/intertnal/response"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"spond"
-	"testing"
 )
 
 type mockSpond struct {
 	mock.Mock
 }
 
-func (m *mockSpond) AppendCode(code spond.StatusCode, msg any) error {
+func (m *mockSpond) AppendCode(code response.StatusCode, msg any) error {
 	args := m.Called(code, msg)
 	return args.Error(0)
 }
 
-func (m *mockSpond) BuildError(code spond.StatusCode, title, message any) spond.ErrorResponse {
+func (m *mockSpond) BuildError(code response.StatusCode, title, message any) spond.ErrorResponse {
 	args := m.Called(code, title, message)
-	return args.Get(0).(spond.ErrorResponse)
+	return args.Get(0).(response.ErrorResponse)
 }
 
 func (m *mockSpond) SayHello() {

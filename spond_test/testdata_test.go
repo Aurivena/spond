@@ -1,4 +1,4 @@
-package spond_test
+package spond
 
 import (
 	"github.com/gin-gonic/gin"

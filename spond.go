@@ -2,94 +2,106 @@ package spond
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/gin-gonic/gin"
-	"io"
+	"errors"
 	"log/slog"
-	"net/http"
-	"os"
-	"spond/faults"
+	"spond/response"
 	"sync"
+
+	"github.com/gin-gonic/gin"
 )
 
-type Impl struct {
-	StatusMessages map[StatusCode]string
-	Mu             *sync.RWMutex
-	Out            io.Writer
+var (
+	errorAppendCode = errors.New("this code already exists")
+	titleInvalid    = "title invalid"
+	messageInvalid  = "message invalid"
+	invalid         = "Invalid"
+	unknownStatus   = "unknown status"
+)
+
+type Spond struct {
+	statusMessages map[response.StatusCode]string
+	mu             sync.Mutex
 }
 
-func NewImpl() *Impl {
-	return &Impl{StatusMessages: statusMessages, Mu: &sync.RWMutex{}, Out: os.Stdout}
+func NewSpond() (*Spond, error) {
+	return &Spond{
+		statusMessages: response.StatusMessages,
+	}, nil
 }
 
-func (e *Impl) SendResponseSuccess(c *gin.Context, status StatusCode, successResponse any) {
+func (s *Spond) SendResponseSuccess(c *gin.Context, status response.StatusCode, successResponse any) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if c == nil {
 		slog.Error("SendResponseSuccess: gin.Context == nil")
 		return
 	}
-	output := SendSuccessOutput{
+	output := response.SendSuccessOutput{
 		Status: status.String(),
 		Output: successResponse,
 	}
 
-	c.JSON(http.StatusOK, output)
+	c.JSON(int(status.MapToHTTPStatus()), output)
 }
 
-func (e *Impl) SendResponseError(c *gin.Context, rsp ErrorResponse) {
+func (s *Spond) SendResponseError(c *gin.Context, rsp response.ErrorResponse) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if c == nil {
 		slog.Error("gin.Context == nil")
 		return
 	}
 
-	statusMessage, ok := e.StatusMessages[rsp.Status]
+	statusMessage, ok := s.statusMessages[rsp.Status]
 	if !ok {
 		slog.Warn("SendResponseError: неизвестный статус код", "статус", rsp.Status)
-		statusMessage = faults.UnknownStatus
+		statusMessage = unknownStatus
 	}
 
-	output := SendErrorOutput{
+	output := response.SendErrorOutput{
 		Status: statusMessage,
 		Error:  rsp.Error,
 	}
 
-	c.AbortWithStatusJSON(http.StatusOK, output)
+	c.AbortWithStatusJSON(int(rsp.Status.MapToHTTPStatus()), output)
 }
 
-func (e *Impl) SayHello() {
-	fmt.Fprint(e.Out, "Hello it Spond!\n")
-}
+func (s *Spond) AppendCode(code response.StatusCode, message string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-func (e *Impl) AppendCode(code StatusCode, message string) error {
-	e.Mu.Lock()
-	defer e.Mu.Unlock()
-
-	if _, exist := e.StatusMessages[code]; exist {
-		return faults.ErrorAppendCode
+	if _, exist := s.statusMessages[code]; exist {
+		return errorAppendCode
 	}
-	e.StatusMessages[code] = message
+	s.statusMessages[code] = message
 	return nil
 }
 
-func (e *Impl) BuildError(code StatusCode, title, message any) ErrorResponse {
+func (s *Spond) BuildError(code response.StatusCode, title, message string) response.ErrorResponse {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if err := validate(title, message); err != "" {
-		return ErrorResponse{
-			Status: BadRequest,
-			Error:  ErrorDetail{Title: faults.Invalid, Message: err},
+		return response.ErrorResponse{
+			Status: response.BadRequest,
+			Error:  response.ErrorDetail{Title: invalid, Message: err},
 		}
 	}
 
-	return ErrorResponse{
-		Status: code.mapToHTTPStatus(),
-		Error:  ErrorDetail{Title: title, Message: message},
+	return response.ErrorResponse{
+		Status: code.MapToHTTPStatus(),
+		Error:  response.ErrorDetail{Title: title, Message: message},
 	}
 }
 
 func validate(title, message any) string {
 	if _, err := json.Marshal(title); err != nil {
-		return faults.TitleInvalid
+		return titleInvalid
 	}
 	if _, err := json.Marshal(message); err != nil {
-		return faults.MessageInvalid
+		return messageInvalid
 	}
 	return ""
 }
