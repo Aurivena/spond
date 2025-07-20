@@ -14,7 +14,7 @@ func TestLogger_Info_WritesToFileAndConsole(t *testing.T) {
 	}
 	defer os.Remove(dumpfile.Name())
 
-	logger := NewLog(dumpfile.Name(), 1, false)
+	logger := NewLog(dumpfile.Name(), 1)
 	defer logger.Close()
 
 	logger.Info("hello %s", "world")
@@ -36,7 +36,7 @@ func TestLogger_Error(t *testing.T) {
 	}
 	defer os.Remove(dumpfile.Name())
 
-	logger := NewLog(dumpfile.Name(), 1, false)
+	logger := NewLog(dumpfile.Name(), 1)
 	defer logger.Close()
 
 	logger.Error("some error %d", 42)
@@ -58,7 +58,7 @@ func TestLogger_Concurrency(t *testing.T) {
 	}
 	defer os.Remove(dumpfile.Name())
 
-	logger := NewLog(dumpfile.Name(), 1, false)
+	logger := NewLog(dumpfile.Name(), 1)
 	defer logger.Close()
 
 	var wg sync.WaitGroup
@@ -89,7 +89,7 @@ func TestLogger_Close(t *testing.T) {
 	}
 	defer os.Remove(dumpfile.Name())
 
-	logger := NewLog(dumpfile.Name(), 1, false)
+	logger := NewLog(dumpfile.Name(), 1)
 	if err := logger.Close(); err != nil {
 		t.Errorf("close failed: %v", err)
 	}

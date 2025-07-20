@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -17,9 +18,9 @@ const (
 	test       = "test"
 	err        = "error"
 	debug      = "debug"
-	defaultMB  = 10
 	fileType   = "file"
 	loggerType = "logger"
+	defaultMB  = 10
 )
 
 var (
@@ -28,28 +29,29 @@ var (
 )
 
 // Usage example
-// logger:=NewLog(filename,32,archive)
+// logger:=NewLog("log/io.log",50)
 // defer logger.Close()
 type Logger struct {
-	fileName string // path storage
-	maxSize  int    // max size file - megabytes
-	archive  bool   // if archive == true: log is archive after rotation
+	Filename string // path storage
+	Size     int    // max size file - megabytes
 	my       sync.Mutex
 	file     *os.File
 }
 
-func NewLog(fileName string, maxSize int, archive bool) *Logger {
-	if maxSize <= 0 {
-		maxSize = defaultMB
+func NewLog(filename string, size int) *Logger {
+	filename = setFilename(filename)
+	size = setSize(size)
+
+	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+		log.Fatalf("can't create log dir: %v", err)
 	}
-	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("can't open log file: %v", err)
 	}
 	return &Logger{
-		fileName: fileName,
-		maxSize:  maxSize,
-		archive:  archive,
+		Filename: filename,
+		Size:     size,
 		file:     f,
 	}
 }
@@ -95,6 +97,21 @@ func (l *Logger) log(logType, msg string, args ...any) {
 	defer l.my.Unlock()
 	resLog := format(logType, logType, msg, args...)
 	writeToConsole(resLog)
+}
+
+func setFilename(filename string) string {
+	if filename == "" {
+		return fmt.Sprintf("log/%s-spond.log", time.Now().UTC().Format(time.RFC3339))
+	}
+
+	return filename
+}
+
+func setSize(size int) int {
+	if size <= 0 {
+		return defaultMB
+	}
+	return size
 }
 
 func colored(logType string) string {
