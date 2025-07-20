@@ -86,11 +86,13 @@ func (l *Logger) Close() error {
 }
 
 func (l *Logger) log(logType, msg string, args ...any) {
+	resFile := format(logType, fileType, msg, args...)
+	_, err := l.Write([]byte(resFile))
+	if err != nil {
+		return
+	}
 	l.my.Lock()
 	defer l.my.Unlock()
-	resFile := format(logType, fileType, msg, args...)
-	l.Write([]byte(resFile))
-
 	resLog := format(logType, logType, msg, args...)
 	writeToConsole(resLog)
 }

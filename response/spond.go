@@ -16,6 +16,6 @@ type ErrorResponse struct {
 }
 
 type ErrorDetail struct {
-	Title   any    `json:"title"`
+	Title   string `json:"title"`
 	Message string `json:"message"`
 }
