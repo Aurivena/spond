@@ -20,19 +20,14 @@ var (
 
 type Spond struct {
 	statusMessages map[response.StatusCode]string
-	mu             sync.Mutex
+	mu             sync.RWMutex
 }
 
-func NewSpond() (*Spond, error) {
-	return &Spond{
-		statusMessages: response.StatusMessages,
-	}, nil
+func NewSpond() *Spond {
+	return &Spond{statusMessages: response.StatusMessages}
 }
 
 func (s *Spond) SendResponseSuccess(c *gin.Context, status response.StatusCode, successResponse any) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	if c == nil {
 		slog.Error("SendResponseSuccess: gin.Context == nil")
 		return
@@ -46,9 +41,6 @@ func (s *Spond) SendResponseSuccess(c *gin.Context, status response.StatusCode, 
 }
 
 func (s *Spond) SendResponseError(c *gin.Context, rsp response.ErrorResponse) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	if c == nil {
 		slog.Error("gin.Context == nil")
 		return
@@ -69,8 +61,8 @@ func (s *Spond) SendResponseError(c *gin.Context, rsp response.ErrorResponse) {
 }
 
 func (s *Spond) AppendCode(code response.StatusCode, message string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
 	if _, exist := s.statusMessages[code]; exist {
 		return errorAppendCode
@@ -80,8 +72,6 @@ func (s *Spond) AppendCode(code response.StatusCode, message string) error {
 }
 
 func (s *Spond) BuildError(code response.StatusCode, title, message string) response.ErrorResponse {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	if err := validate(title, message); err != "" {
 		return response.ErrorResponse{
@@ -96,7 +86,7 @@ func (s *Spond) BuildError(code response.StatusCode, title, message string) resp
 	}
 }
 
-func validate(title, message any) string {
+func validate(title, message string) string {
 	if _, err := json.Marshal(title); err != nil {
 		return titleInvalid
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 func TestAppendCode(t *testing.T) {
-	s, _ := NewSpond()
+	s := NewSpond()
 	tests := []struct {
 		name    string
 		code    response.StatusCode
@@ -35,7 +35,7 @@ func TestAppendCode(t *testing.T) {
 }
 
 func TestBuildError(t *testing.T) {
-	s, _ := NewSpond()
+	s := NewSpond()
 	tests := []struct {
 		name    string
 		code    response.StatusCode
@@ -58,7 +58,7 @@ func TestBuildError(t *testing.T) {
 
 func TestSendResponseSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	s, _ := NewSpond()
+	s := NewSpond()
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	s.SendResponseSuccess(c, response.Success, map[string]string{"foo": "bar"})
@@ -72,7 +72,7 @@ func TestSendResponseSuccess(t *testing.T) {
 
 func TestSendResponseError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	s, _ := NewSpond()
+	s := NewSpond()
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	errResp := response.ErrorResponse{
