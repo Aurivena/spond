@@ -21,11 +21,12 @@ const (
 	fileType   = "file"
 	loggerType = "logger"
 	defaultMB  = 10
+	formatTime = "20060102-150405"
 )
 
 var (
 	_        io.WriteCloser = (*Logger)(nil)
-	megabyte                = 1024 * 1024
+	megabyte int64          = 1024 * 1024
 )
 
 // Usage example
@@ -33,24 +34,25 @@ var (
 // defer logger.Close()
 type Logger struct {
 	Filename string // path storage
-	Size     int    // max size file - megabytes
-	my       sync.Mutex
+	Size     int64  // max size file - megabytes
+	base     string
+	mu       sync.Mutex
 	file     *os.File
 }
 
-func NewLog(filename string, size int) *Logger {
-	filename = setFilename(filename)
+func NewLog(filename string, size int64) *Logger {
+	filename, base := setFilename(filename)
 	size = setSize(size)
 
 	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
 		log.Fatalf("can't create log dir: %v", err)
 	}
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatalf("can't open log file: %v", err)
-	}
+
+	f := createFile(filename)
+
 	return &Logger{
 		Filename: filename,
+		base:     base,
 		Size:     size,
 		file:     f,
 	}
@@ -77,8 +79,9 @@ func (l *Logger) Debug(msg string, args ...any) {
 }
 
 func (l *Logger) Write(p []byte) (n int, err error) {
-	l.my.Lock()
-	defer l.my.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.fileLimit()
 	n, err = l.file.Write(p)
 	return n, err
 }
@@ -93,25 +96,63 @@ func (l *Logger) log(logType, msg string, args ...any) {
 	if err != nil {
 		return
 	}
-	l.my.Lock()
-	defer l.my.Unlock()
 	resLog := format(logType, logType, msg, args...)
 	writeToConsole(resLog)
 }
 
-func setFilename(filename string) string {
-	if filename == "" {
-		return fmt.Sprintf("log/%s-spond.log", time.Now().UTC().Format(time.RFC3339))
+func (l *Logger) fileLimit() {
+	fileInfo, err := os.Stat(l.Filename)
+	if err != nil {
+		log.Fatalf("file not open")
 	}
+	size := fileInfo.Size()
 
-	return filename
+	if size >= l.Size*megabyte {
+		_ = l.file.Close()
+		l.rotation()
+		l.file = createFile(l.Filename)
+	}
 }
 
-func setSize(size int) int {
+func (l *Logger) rotation() {
+	baseDir := filepath.Dir(l.Filename)
+	baseName := filepath.Base(l.base)
+	ext := filepath.Ext(l.Filename)
+	nameOnly := baseName[:len(baseName)-len(ext)]
+	newName := fmt.Sprintf("%s-%s%s", nameOnly, time.Now().UTC().Format(formatTime), ext)
+	l.Filename = filepath.Join(baseDir, newName)
+}
+
+func setFilename(filename string) (string, string) {
+	if filename == "" {
+		return filepath.Join("log", defaultLogFilename()), "spond.log"
+	}
+	if len(filename) > 0 && (filename[len(filename)-1] == '/' || filename[len(filename)-1] == '\\') {
+		return filepath.Join(filename, defaultLogFilename()), "spond.log"
+	}
+	if stat, err := os.Stat(filename); err == nil && stat.IsDir() {
+		return filepath.Join(filename, defaultLogFilename()), "spond.log"
+	}
+	return filename, filepath.Base(filename)
+}
+
+func defaultLogFilename() string {
+	return time.Now().UTC().Format("20060102-150405") + "-" + "spond" + ".log"
+}
+
+func setSize(size int64) int64 {
 	if size <= 0 {
-		return defaultMB
+		return defaultMB * megabyte
 	}
 	return size
+}
+
+func createFile(filename string) *os.File {
+	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatalf("can't open log file: %v", err)
+	}
+	return f
 }
 
 func colored(logType string) string {
@@ -134,7 +175,7 @@ func writeToConsole(msg string) {
 }
 
 func format(logType, formatType, msg string, args ...any) string {
-	currentTime := time.Now().UTC().Format(time.RFC3339)
+	currentTime := time.Now().UTC().Format(formatTime)
 	notification := fmt.Sprintf(msg, args...)
 	switch formatType {
 	case fileType:
