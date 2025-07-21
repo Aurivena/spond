@@ -4,6 +4,7 @@ package spond
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"sync"
 
@@ -60,7 +61,7 @@ func (s *Spond) SendResponseError(c *gin.Context, rsp response.ErrorResponse) {
 
 	statusMessage, ok := s.statusMessages[rsp.Status]
 	if !ok {
-		slog.Warn("SendResponseError: %s code", "status", unknownStatus, rsp.Status)
+		slog.Warn(fmt.Sprintf("SendResponseError: %s code\n Status: %s\n", unknownStatus, rsp.Status))
 		statusMessage = unknownStatus
 	}
 
