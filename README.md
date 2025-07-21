@@ -16,7 +16,7 @@
 ### Install
 
 ```bash
-go get github.com/Aurivena/spond@v1.0.1
+go get github.com/Aurivena/spond@v1.0.0
 ```
 
 ---
