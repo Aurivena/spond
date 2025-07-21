@@ -1,4 +1,4 @@
-module spond
+module github.com/Aurivena/spond
 
 go 1.24.3
 
