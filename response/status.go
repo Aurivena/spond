@@ -38,6 +38,7 @@ const (
 	ResourceInTrash       StatusCode = 410
 	BadHeader             StatusCode = 412
 	UnsupportedMediaType  StatusCode = 415
+	UnprocessableEntity   StatusCode = 422
 	InternalServerError   StatusCode = 500
 )
 
@@ -55,5 +56,6 @@ var StatusMessages = map[StatusCode]string{
 	ResourceInTrash:       "ResourceInTrash",
 	BadHeader:             "BadHeader",
 	UnsupportedMediaType:  "UnsupportedMediaType",
+	UnprocessableEntity:   "UnprocessableEntity",
 	InternalServerError:   "InternalServerError",
 }

@@ -1,7 +1,8 @@
+// Package spond lives to facilitate communication
+// between server and web via JSON structures.
 package spond
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"spond/response"
@@ -10,13 +11,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	errorAppendCode = errors.New("this code already exists")
-	titleInvalid    = "title invalid"
-	messageInvalid  = "message invalid"
-	invalid         = "Invalid"
-	unknownStatus   = "unknown status"
+const (
+	titleInvalid     = "title invalid"
+	messageInvalid   = "message invalid"
+	invalid          = "Invalid"
+	unknownStatus    = "unknown status"
+	maxTitleLength   = 256
+	maxMessageLength = 1024
 )
+
+var errorAppendCode = errors.New("this code already exists")
 
 type Spond struct {
 	statusMessages map[response.StatusCode]string
@@ -72,10 +76,9 @@ func (s *Spond) AppendCode(code response.StatusCode, message string) error {
 }
 
 func (s *Spond) BuildError(code response.StatusCode, title, message string) response.ErrorResponse {
-
 	if err := validate(title, message); err != "" {
 		return response.ErrorResponse{
-			Status: response.BadRequest,
+			Status: response.UnprocessableEntity,
 			Error:  response.ErrorDetail{Title: invalid, Message: err},
 		}
 	}
@@ -87,10 +90,10 @@ func (s *Spond) BuildError(code response.StatusCode, title, message string) resp
 }
 
 func validate(title, message string) string {
-	if _, err := json.Marshal(title); err != nil {
+	if len(title) == 0 || len(title) > maxTitleLength {
 		return titleInvalid
 	}
-	if _, err := json.Marshal(message); err != nil {
+	if len(message) == 0 || len(message) > maxMessageLength {
 		return messageInvalid
 	}
 	return ""
