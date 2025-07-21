@@ -3,6 +3,7 @@
 </p>
 
 # Spond
+[![Go Reference](https://pkg.go.dev/badge/github.com/Aurivena/spond.svg)](https://pkg.go.dev/github.com/Aurivena/spond)
 
 ## Description
 
