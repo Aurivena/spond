@@ -5,9 +5,9 @@ package spond
 import (
 	"errors"
 	"log/slog"
-	"spond/response"
 	"sync"
 
+	"github.com/Aurivena/spond/response"
 	"github.com/gin-gonic/gin"
 )
 

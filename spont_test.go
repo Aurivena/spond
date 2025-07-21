@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"spond/response"
 	"testing"
+
+	"github.com/Aurivena/spond/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
