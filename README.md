@@ -1,6 +1,8 @@
-# Spond
+<p align="center">
+  <img src="assets/logo.png" alt="Spond Logo" width="160" height="160"/>
+</p>
 
-<img src="assets/logo.png" alt="Logo" width="100" height="100"/>
+# Spond
 
 ## Description
 
@@ -12,7 +14,7 @@
 ### Install
 
 ```bash
-go get github.com/yourusername/spond
+go get github.com/Aurivena/spond
 ```
 
 ---
