@@ -2,8 +2,14 @@ package response
 
 import "fmt"
 
+// Is required for challenge internal fucntion
 type StatusCode int
 
+// MapToHTTPStatus converts the business status code to the standard HTTP status.
+// Codes 100-526 are returned unchanged as valid HTTP.
+// Codes 4000-4999 are returned as 400 (client error).
+// Codes 5000-5999 are returned as 500 (server error).
+// The rest are 500 (unknown error).
 func (e StatusCode) MapToHTTPStatus() StatusCode {
 	switch {
 	case e >= 100 && e < 527:
@@ -17,6 +23,8 @@ func (e StatusCode) MapToHTTPStatus() StatusCode {
 	}
 }
 
+// String returns a string description of the statusCode from the StatusMessages dictionary.
+// If the code is not found, returns "unknown statusCode (value)".
 func (e StatusCode) String() string {
 	if str, ok := StatusMessages[e]; ok {
 		return str

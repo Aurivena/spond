@@ -28,6 +28,9 @@ type Spond struct {
 }
 
 // For initialization  struct Spond
+// Usage example
+// spond:=NewSpond()
+// spond.SendResponseSuccess(c, spond.OK, nil)
 func NewSpond() *Spond {
 	return &Spond{statusMessages: response.StatusMessages}
 }
@@ -57,7 +60,7 @@ func (s *Spond) SendResponseError(c *gin.Context, rsp response.ErrorResponse) {
 
 	statusMessage, ok := s.statusMessages[rsp.Status]
 	if !ok {
-		slog.Warn("SendResponseError: неизвестный статус код", "статус", rsp.Status)
+		slog.Warn("SendResponseError: %s code", "status", unknownStatus, rsp.Status)
 		statusMessage = unknownStatus
 	}
 

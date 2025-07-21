@@ -161,7 +161,7 @@ func setFilename(filename string) (string, string) {
 
 // defaultLogFilename returns the default file name (with timestamp).
 func defaultLogFilename() string {
-	return time.Now().UTC().Format("20060102-150405") + "-" + "spond" + ".log"
+	return time.Now().UTC().Format(formatTime) + "-" + "spond" + ".log"
 }
 
 // setSize returns the correct file size. If <= 0, it is default.
