@@ -16,32 +16,36 @@ import (
 )
 
 const (
-	info         = "info"
-	warn         = "warn"
-	test         = "test"
-	err          = "error"
-	debug        = "debug"
-	fileType     = "file"
-	loggerType   = "logger"
-	defaultBytes = 50000
-	formatTime   = "20060102-150405"
+	info       = "info"
+	warn       = "warn"
+	test       = "test"
+	err        = "error"
+	debug      = "debug"
+	fileType   = "file"
+	loggerType = "logger"
+	formatTime = "20060102-150405"
 )
 
-var _ io.WriteCloser = (*Logger)(nil)
+var (
+	_ io.WriteCloser = (*Logger)(nil)
+	// Default log file size.
+	defaultBytes int64 = 5 * 1024 * 1024
+)
 
-// Usage example
-// logger:=NewLog("log/io.log",50)
-// defer logger.Close()
 type Logger struct {
-	Filename string     // path storage
-	Size     int64      // max size file (bytes)
-	base     string     // base filename for rotation
-	mu       sync.Mutex // for concurrency write
-	file     *os.File   // current log file
+	Filename string     // path storage.
+	Size     int64      // max size file (bytes).
+	base     string     // base filename for rotation.
+	mu       sync.Mutex // for concurrency write.
+	file     *os.File   // current log file.
 }
 
 // Initialization new Logger.
 // If direct or filename not created, go to create
+// Usage example
+// size := 50 *1024*1024 // 50mb
+// logger:=NewLog("log/io.log",size)
+// defer logger.Close()
 func NewLog(filename string, size int64) *Logger {
 	filename, base := setFilename(filename)
 	size = setSize(size)

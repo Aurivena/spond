@@ -43,10 +43,10 @@ func TestBuildError(t *testing.T) {
 		message string
 		want    response.ErrorResponse
 	}{
-		{"валидный ответ", response.BadRequest, "Ошибка", "Описание",
-			response.ErrorResponse{Status: response.BadRequest, Error: response.ErrorDetail{Title: "Ошибка", Message: "Описание"}}},
-		{"пустые значения", response.BadRequest, "", "",
-			response.ErrorResponse{Status: response.BadRequest, Error: response.ErrorDetail{Title: "", Message: ""}}},
+		{"валидный ответ", response.UnprocessableEntity, "", "Описание",
+			response.ErrorResponse{Status: response.UnprocessableEntity, Error: response.ErrorDetail{Title: invalid, Message: titleInvalid}}},
+		{"пустые значения", response.UnprocessableEntity, "title", "",
+			response.ErrorResponse{Status: response.UnprocessableEntity, Error: response.ErrorDetail{Title: invalid, Message: messageInvalid}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -75,9 +75,11 @@ func TestSendResponseError(t *testing.T) {
 	s := NewSpond()
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
+	errTitle := "Доступ запрещен"
+	errMessage := "У вас недостаточно прав"
 	errResp := response.ErrorResponse{
 		Status: response.BadRequest,
-		Error:  response.ErrorDetail{Title: "Ошибка", Message: "Сообщение"},
+		Error:  response.ErrorDetail{Title: errTitle, Message: errMessage},
 	}
 	s.SendResponseError(c, errResp)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -85,6 +87,6 @@ func TestSendResponseError(t *testing.T) {
 	err := json.Unmarshal(w.Body.Bytes(), &output)
 	assert.NoError(t, err)
 	assert.Equal(t, s.statusMessages[response.BadRequest], output.Status)
-	assert.Equal(t, "Ошибка", output.Error.Title)
-	assert.Equal(t, "Сообщение", output.Error.Message)
+	assert.Equal(t, errTitle, output.Error.Title)
+	assert.Equal(t, errMessage, output.Error.Message)
 }
