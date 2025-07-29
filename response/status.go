@@ -2,7 +2,7 @@ package response
 
 import "fmt"
 
-// Is required for challenge internal fucntion
+// Is required for challenge internal function
 type StatusCode int
 
 // MapToHTTPStatus converts the business status code to the standard HTTP status.
