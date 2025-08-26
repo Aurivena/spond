@@ -1,6 +1,8 @@
 module github.com/Aurivena/spond
 
-go 1.24.3
+go 1.23.0
+
+toolchain go1.24.6
 
 require (
 	github.com/fatih/color v1.18.0

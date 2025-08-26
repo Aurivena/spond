@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Aurivena/spond/response"
+	"github.com/Aurivena/spond/envelope"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +16,7 @@ func TestAppendCode(t *testing.T) {
 	s := NewSpond()
 	tests := []struct {
 		name    string
-		code    response.StatusCode
+		code    envelope.StatusCode
 		message string
 		wantErr error
 	}{
@@ -39,15 +39,15 @@ func TestBuildError(t *testing.T) {
 	s := NewSpond()
 	tests := []struct {
 		name    string
-		code    response.StatusCode
+		code    envelope.StatusCode
 		title   string
 		message string
-		want    response.ErrorResponse
+		want    envelope.Errorenvelope
 	}{
-		{"валидный ответ", response.UnprocessableEntity, "", "Описание",
-			response.ErrorResponse{Status: response.UnprocessableEntity, Error: response.ErrorDetail{Title: invalid, Message: titleInvalid}}},
-		{"пустые значения", response.UnprocessableEntity, "title", "",
-			response.ErrorResponse{Status: response.UnprocessableEntity, Error: response.ErrorDetail{Title: invalid, Message: messageInvalid}}},
+		{"валидный ответ", envelope.UnprocessableEntity, "", "Описание",
+			envelope.Errorenvelope{Status: envelope.UnprocessableEntity, Error: envelope.ErrorDetail{Title: invalid, Message: titleInvalid}}},
+		{"пустые значения", envelope.UnprocessableEntity, "title", "",
+			envelope.Errorenvelope{Status: envelope.UnprocessableEntity, Error: envelope.ErrorDetail{Title: invalid, Message: messageInvalid}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -57,37 +57,37 @@ func TestBuildError(t *testing.T) {
 	}
 }
 
-func TestSendResponseSuccess(t *testing.T) {
+func TestSendenvelopeSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	s := NewSpond()
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	s.SendResponseSuccess(c, response.Success, map[string]string{"foo": "bar"})
+	s.SendenvelopeSuccess(c, envelope.Success, map[string]string{"foo": "bar"})
 	assert.Equal(t, http.StatusOK, w.Code)
-	var output response.SendSuccessOutput
+	var output envelope.SendSuccessOutput
 	err := json.Unmarshal(w.Body.Bytes(), &output)
 	assert.NoError(t, err)
-	assert.Equal(t, response.Success.String(), output.Status)
+	assert.Equal(t, envelope.Success.String(), output.Status)
 	assert.Equal(t, map[string]interface{}{"foo": "bar"}, output.Output)
 }
 
-func TestSendResponseError(t *testing.T) {
+func TestSendenvelopeError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	s := NewSpond()
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	errTitle := "Доступ запрещен"
 	errMessage := "У вас недостаточно прав"
-	errResp := response.ErrorResponse{
-		Status: response.BadRequest,
-		Error:  response.ErrorDetail{Title: errTitle, Message: errMessage},
+	errResp := envelope.Errorenvelope{
+		Status: envelope.BadRequest,
+		Error:  envelope.ErrorDetail{Title: errTitle, Message: errMessage},
 	}
-	s.SendResponseError(c, errResp)
+	s.SendenvelopeError(c, errResp)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	var output response.SendErrorOutput
+	var output envelope.SendErrorOutput
 	err := json.Unmarshal(w.Body.Bytes(), &output)
 	assert.NoError(t, err)
-	assert.Equal(t, s.statusMessages[response.BadRequest], output.Status)
+	assert.Equal(t, s.statusMessages[envelope.BadRequest], output.Status)
 	assert.Equal(t, errTitle, output.Error.Title)
 	assert.Equal(t, errMessage, output.Error.Message)
 }
