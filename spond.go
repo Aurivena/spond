@@ -5,7 +5,6 @@ package spond
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"sync"
 
@@ -30,12 +29,12 @@ type Spond struct {
 }
 
 type sendResponse[T any] struct {
-	Data   *T           `json:"data,omitempty"`
-	Status string       `json:"status"`
-	Error  *errorDetail `json:"error,omitempty"`
+	Data   *T              `json:"data,omitempty"`
+	Status string          `json:"status"`
+	Error  *errorDetailDTO `json:"error,omitempty"`
 }
 
-type errorDetail struct {
+type errorDetailDTO struct {
 	Title    string `json:"title"`
 	Message  string `json:"message"`
 	Solution string `json:"solution"`
@@ -53,11 +52,12 @@ func NewSpond() *Spond {
 // status is the envelope status, Successenvelope is the payload for the client.
 func (s *Spond) SendResponseSuccess(c *gin.Context, code envelope.StatusCode, data any) {
 	if c == nil {
-		slog.Error("SendenvelopeSuccess: gin.Context == nil")
-		return
+		// It warn developer
+		panic("SendResponseSuccess: gin.Context == nil")
 	}
 
-	if _, exist := s.statusMessages[code]; exist {
+	if !s.codeExist(code) {
+		// It warn developer
 		panic(fmt.Errorf("status code %d don`t exists", code))
 	}
 
@@ -71,31 +71,34 @@ func (s *Spond) SendResponseSuccess(c *gin.Context, code envelope.StatusCode, da
 
 // SendResponseError sends the error to the client as JSON via gin.Context.
 // rsp — structure with error details.
-func (s *Spond) SendResponseError(c *gin.Context, code envelope.StatusCode, err sendResponse[any]) {
+func (s *Spond) SendResponseError(c *gin.Context, err envelope.AppError) {
 	if c == nil {
-		slog.Error("gin.Context == nil")
-		return
+		// It warn developer
+		panic("SendResponseError: gin.Context == nil")
 	}
 
-	if _, exist := s.statusMessages[code]; exist {
-		panic(fmt.Errorf("status code %d don`t exists", code))
+	if !s.codeExist(err.Code) {
+		// It warn developer
+		panic(fmt.Errorf("status code %d don`t exists", err.Code))
 	}
 
-	//TODO добавить mapToHTTP
 	output := sendResponse[any]{
-		Data:   nil,
-		Status: code.String(),
-		Error:  err.Error,
+		Status: err.Code.String(),
+		Error: &errorDetailDTO{
+			Message:  err.Detail.Message,
+			Title:    err.Detail.Title,
+			Solution: err.Detail.Solution,
+		},
 	}
 
-	c.AbortWithStatusJSON(int(code), output)
+	c.AbortWithStatusJSON(int(err.Code), output)
 }
 
 // AppendCode adds a new status code and message to the statusMessages card.
 // If the code already exists, returns the errorAppendCode error.
 func (s *Spond) AppendCode(code envelope.StatusCode, message string) error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if _, exist := s.statusMessages[code]; exist {
 		return errorAppendCode
@@ -106,30 +109,43 @@ func (s *Spond) AppendCode(code envelope.StatusCode, message string) error {
 
 // BuildError forms an error structure for responding to the client.
 // If the input parameters do not pass validation, it returns an error with the UnprocessableEntity code.
-func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution string) errorDetail {
+func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution string) *envelope.AppError {
 	if err := validate(title, message); err != nil {
-		return errorDetail{
-			Title:    invalid,
-			Message:  err.Error(),
-			Solution: "",
+		return &envelope.AppError{
+			Code: envelope.UnprocessableEntity,
+			Detail: envelope.ErrorDetail{
+				Title:    "invalid",
+				Message:  err.Error(),
+				Solution: "Recheck limits for title and message pls :)",
+			},
 		}
 	}
-
-	return errorDetail{
-		Title:    title,
-		Message:  message,
-		Solution: solution,
+	return &envelope.AppError{
+		Code: code,
+		Detail: envelope.ErrorDetail{
+			Title:    title,
+			Message:  message,
+			Solution: solution,
+		},
 	}
+}
+
+func (s *Spond) codeExist(code envelope.StatusCode) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	_, exist := s.statusMessages[code]
+	return exist
 }
 
 // validate checks the length of the title and message.
 // Returns the error text when restrictions are violated.
 func validate(title, message string) error {
 	if len(title) == 0 || len(title) > maxTitleLength {
-		return fmt.Errorf("$w", titleInvalid)
+		return fmt.Errorf("%s", titleInvalid)
 	}
 	if len(message) == 0 || len(message) > maxMessageLength {
-		return fmt.Errorf("$w", messageInvalid)
+		return fmt.Errorf("%s", messageInvalid)
 	}
 	return nil
 }
