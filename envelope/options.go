@@ -10,9 +10,10 @@ const (
 )
 
 var (
-	ErrorAppendCode = errors.New("This code already exists")
-	TitleInvalid    = errors.New("Invalid value for title")
-	MessageInvalid  = errors.New("Invalid value for message")
-	Invalid         = errors.New("Invalid")
-	UnknownStatus   = errors.New("Unknown status")
+	ErrorAppendCode = errors.New("this code already exists")
+	TitleInvalid    = errors.New("invalid value for title")
+	MessageInvalid  = errors.New("invalid value for message")
+	Invalid         = errors.New("invalid")
+	UnknownStatus   = errors.New("unknown status")
+	SolutionError   = errors.New("recheck limits for title and message pls :)")
 )

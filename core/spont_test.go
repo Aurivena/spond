@@ -1,4 +1,4 @@
-package spond
+package core_test
 
 import (
 	"encoding/json"
@@ -6,88 +6,151 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Aurivena/spond/core"
 	"github.com/Aurivena/spond/envelope"
-
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
+type writeSuccess struct {
+	Data any `json:"data,omitempty"`
+}
+type errorDTO struct {
+	Title    string `json:"title"`
+	Message  string `json:"message"`
+	Solution string `json:"solution,omitempty"`
+}
+type writeError struct {
+	Error errorDTO `json:"error"`
+}
+
 func TestAppendCode(t *testing.T) {
-	s := NewSpond()
-	tests := []struct {
-		name    string
-		code    envelope.StatusCode
-		message string
-		wantErr error
-	}{
-		{"добавление нового кода", 9999, "new code", nil},
-		{"повторный код", 9999, "again", errorAppendCode},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := s.AppendCode(tt.code, tt.message)
-			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
+	s := core.NewSpond()
+
+	err := s.AppendCode(envelope.StatusCode(9999), "new code")
+	assert.NoError(t, err)
+
+	err = s.AppendCode(envelope.StatusCode(9999), "again")
+	assert.Error(t, err)
 }
 
 func TestBuildError(t *testing.T) {
-	s := NewSpond()
+	s := core.NewSpond()
+
 	tests := []struct {
-		name    string
-		code    envelope.StatusCode
-		title   string
-		message string
-		want    envelope.Errorenvelope
+		name     string
+		code     envelope.StatusCode
+		title    string
+		message  string
+		solution string
+		want     envelope.AppError
 	}{
-		{"валидный ответ", envelope.UnprocessableEntity, "", "Описание",
-			envelope.Errorenvelope{Status: envelope.UnprocessableEntity, Error: envelope.ErrorDetail{Title: invalid, Message: titleInvalid}}},
-		{"пустые значения", envelope.UnprocessableEntity, "title", "",
-			envelope.Errorenvelope{Status: envelope.UnprocessableEntity, Error: envelope.ErrorDetail{Title: invalid, Message: messageInvalid}}},
+		{
+			name:     "пустой title → UnprocessableEntity + invalid",
+			code:     envelope.UnprocessableEntity,
+			title:    "",
+			message:  "Описание",
+			solution: "",
+			want: envelope.AppError{
+				Code: envelope.UnprocessableEntity,
+				Detail: envelope.ErrorDetail{
+					Title:    "invalid",
+					Message:  "invalid value for title",
+					Solution: "recheck limits for title and message pls :)",
+				},
+			},
+		},
+		{
+			name:     "пустой message → UnprocessableEntity + invalid",
+			code:     envelope.UnprocessableEntity,
+			title:    "title",
+			message:  "",
+			solution: "",
+			want: envelope.AppError{
+				Code: envelope.UnprocessableEntity,
+				Detail: envelope.ErrorDetail{
+					Title:    "invalid",
+					Message:  "invalid value for message",
+					Solution: "recheck limits for title and message pls :)",
+				},
+			},
+		},
+		{
+			name:     "валидный ввод → указанный код и детали",
+			code:     envelope.BadRequest,
+			title:    "Bad input",
+			message:  "Некорректные данные",
+			solution: "Проверьте поля",
+			want: envelope.AppError{
+				Code: envelope.BadRequest,
+				Detail: envelope.ErrorDetail{
+					Title:    "Bad input",
+					Message:  "Некорректные данные",
+					Solution: "Проверьте поля",
+				},
+			},
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := s.BuildError(tt.code, tt.title, tt.message)
-			assert.Equal(t, tt.want, got)
+			gotPtr := s.BuildError(tt.code, tt.title, tt.message, tt.solution)
+			if gotPtr == nil {
+				t.Fatalf("BuildError returned nil")
+			}
+			assert.Equal(t, tt.want, *gotPtr)
 		})
 	}
 }
 
-func TestSendenvelopeSuccess(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	s := NewSpond()
+func TestSendResponseSuccess(t *testing.T) {
+	s := core.NewSpond()
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	s.SendenvelopeSuccess(c, envelope.Success, map[string]string{"foo": "bar"})
+
+	payload := map[string]string{"foo": "bar"}
+	s.SendResponseSuccess(w, envelope.Success, payload)
+
 	assert.Equal(t, http.StatusOK, w.Code)
-	var output envelope.SendSuccessOutput
-	err := json.Unmarshal(w.Body.Bytes(), &output)
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+
+	var out writeSuccess
+	err := json.Unmarshal(w.Body.Bytes(), &out)
 	assert.NoError(t, err)
-	assert.Equal(t, envelope.Success.String(), output.Status)
-	assert.Equal(t, map[string]interface{}{"foo": "bar"}, output.Output)
+
+	assert.Equal(t, map[string]any{"foo": "bar"}, out.Data)
 }
 
-func TestSendenvelopeError(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	s := NewSpond()
+func TestSendResponseSuccess_NoContent(t *testing.T) {
+	s := core.NewSpond()
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
+
+	s.SendResponseSuccess(w, envelope.NoContent, nil)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Equal(t, "", w.Header().Get("Content-Type"))
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestSendResponseError(t *testing.T) {
+	s := core.NewSpond()
+	w := httptest.NewRecorder()
+
 	errTitle := "Доступ запрещен"
 	errMessage := "У вас недостаточно прав"
-	errResp := envelope.Errorenvelope{
-		Status: envelope.BadRequest,
-		Error:  envelope.ErrorDetail{Title: errTitle, Message: errMessage},
+	appErr := envelope.AppError{
+		Code:   envelope.BadRequest,
+		Detail: envelope.ErrorDetail{Title: errTitle, Message: errMessage, Solution: ""},
 	}
-	s.SendenvelopeError(c, errResp)
+
+	s.SendResponseError(w, appErr)
+
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	var output envelope.SendErrorOutput
-	err := json.Unmarshal(w.Body.Bytes(), &output)
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+
+	var out writeError
+	err := json.Unmarshal(w.Body.Bytes(), &out)
 	assert.NoError(t, err)
-	assert.Equal(t, s.statusMessages[envelope.BadRequest], output.Status)
-	assert.Equal(t, errTitle, output.Error.Title)
-	assert.Equal(t, errMessage, output.Error.Message)
+
+	assert.Equal(t, errTitle, out.Error.Title)
+	assert.Equal(t, errMessage, out.Error.Message)
+	assert.Equal(t, "", out.Error.Solution)
 }

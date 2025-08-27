@@ -1,6 +1,6 @@
-// Package spond lives to facilitate communication
+// Package core lives to facilitate communication
 // between server and web via JSON structures.
-package spond
+package core
 
 import (
 	"bytes"
@@ -23,6 +23,7 @@ type writeSuccess struct {
 }
 
 type writeError struct {
+	Code  string   `json:"code"`
 	Error errorDTO `json:"error"`
 }
 
@@ -63,7 +64,7 @@ func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusC
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(int(code))
 	w.Write(buff.Bytes())
 }
@@ -115,9 +116,9 @@ func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution st
 		return &envelope.AppError{
 			Code: envelope.UnprocessableEntity,
 			Detail: envelope.ErrorDetail{
-				Title:    "invalid",
+				Title:    envelope.Invalid.Error(),
 				Message:  err.Error(),
-				Solution: "Recheck limits for title and message pls :)",
+				Solution: envelope.SolutionError.Error(),
 			},
 		}
 	}
