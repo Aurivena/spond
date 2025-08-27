@@ -3,13 +3,14 @@
 package spond
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"sync"
 
 	"github.com/Aurivena/spond/envelope"
-	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -28,13 +29,12 @@ type Spond struct {
 	mu             sync.RWMutex                   // for code append
 }
 
-type sendResponse[T any] struct {
-	Data   *T              `json:"data,omitempty"`
-	Status string          `json:"status"`
-	Error  *errorDetailDTO `json:"error,omitempty"`
+type writeSuccess struct {
+	Data  *any        `json:"data,omitempty"`
+	Error *writeError `json:"error,omitempty"`
 }
 
-type errorDetailDTO struct {
+type writeError struct {
 	Title    string `json:"title"`
 	Message  string `json:"message"`
 	Solution string `json:"solution"`
@@ -50,48 +50,39 @@ func NewSpond() *Spond {
 
 // SendResponseSuccess sends a successful JSON envelope via gin.Context.
 // status is the envelope status, Successenvelope is the payload for the client.
-func (s *Spond) SendResponseSuccess(c *gin.Context, code envelope.StatusCode, data any) {
-	if c == nil {
-		// It warn developer
-		panic("SendResponseSuccess: gin.Context == nil")
-	}
-
+func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusCode, data any) {
 	if !s.codeExist(code) {
 		// It warn developer
 		panic(fmt.Errorf("status code %d don`t exists", code))
 	}
 
-	output := sendResponse[any]{
-		Data:   &data,
-		Status: code.String(),
+	output := writeSuccess{
+		Data: &data,
 	}
 
-	c.JSON(int(code), output)
+	w.WriteHeader(int(code))
+	_ = json.NewEncoder(w).Encode(output)
 }
 
 // SendResponseError sends the error to the client as JSON via gin.Context.
 // rsp — structure with error details.
-func (s *Spond) SendResponseError(c *gin.Context, err envelope.AppError) {
-	if c == nil {
-		// It warn developer
-		panic("SendResponseError: gin.Context == nil")
-	}
-
+func (s *Spond) SendResponseError(w http.ResponseWriter, err envelope.Error) {
 	if !s.codeExist(err.Code) {
 		// It warn developer
 		panic(fmt.Errorf("status code %d don`t exists", err.Code))
 	}
 
-	output := sendResponse[any]{
-		Status: err.Code.String(),
-		Error: &errorDetailDTO{
+	w.WriteHeader(int(err.Code))
+
+	output := writeSuccess{
+		Error: &writeError{
 			Message:  err.Detail.Message,
 			Title:    err.Detail.Title,
 			Solution: err.Detail.Solution,
 		},
 	}
 
-	c.AbortWithStatusJSON(int(err.Code), output)
+	_ = json.NewEncoder(w).Encode(output)
 }
 
 // AppendCode adds a new status code and message to the statusMessages card.
@@ -109,9 +100,9 @@ func (s *Spond) AppendCode(code envelope.StatusCode, message string) error {
 
 // BuildError forms an error structure for responding to the client.
 // If the input parameters do not pass validation, it returns an error with the UnprocessableEntity code.
-func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution string) *envelope.AppError {
+func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution string) *envelope.Error {
 	if err := validate(title, message); err != nil {
-		return &envelope.AppError{
+		return &envelope.Error{
 			Code: envelope.UnprocessableEntity,
 			Detail: envelope.ErrorDetail{
 				Title:    "invalid",
@@ -120,7 +111,7 @@ func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution st
 			},
 		}
 	}
-	return &envelope.AppError{
+	return &envelope.Error{
 		Code: code,
 		Detail: envelope.ErrorDetail{
 			Title:    title,
@@ -131,8 +122,8 @@ func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution st
 }
 
 func (s *Spond) codeExist(code envelope.StatusCode) bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	_, exist := s.statusMessages[code]
 	return exist

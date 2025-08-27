@@ -6,7 +6,7 @@ type ErrorDetail struct {
 	Solution string
 }
 
-type AppError struct {
+type Error struct {
 	Code   StatusCode
 	Detail ErrorDetail
 }
