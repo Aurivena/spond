@@ -3,8 +3,6 @@
 package core
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -15,7 +13,7 @@ import (
 
 type Spond struct {
 	statusMessages map[envelope.StatusCode]string //storage status code and provides code append.
-	mu             sync.RWMutex                   // for code append
+	mu             sync.RWMutex
 }
 
 type writeSuccess struct {
@@ -36,16 +34,16 @@ type errorDTO struct {
 // For initialization  struct Spond
 // Usage example
 // spond:=NewSpond()
-// spond.SendenvelopeSuccess(c, spond.OK, nil)
+// spond.SendResponseSuccess(w, spond.Created, nil)
 func NewSpond() *Spond {
 	return &Spond{statusMessages: envelope.StatusMessages}
 }
 
-// SendResponseSuccess sends a successful JSON envelope via gin.Context.
-// status is the envelope status, Successenvelope is the payload for the client.
+// SendResponseSuccess sends a successful JSON envelope.
+// status is the envelope status, is the payload for the client.
 func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusCode, data any) {
 	if !s.codeExists(code) {
-		// It warn developer
+		// It error developer
 		panic(fmt.Errorf("Status code %d don`t exists", code))
 	}
 
@@ -58,22 +56,14 @@ func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusC
 		Data: &data,
 	}
 
-	var buff bytes.Buffer
-	if err := json.NewEncoder(&buff).Encode(output); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(int(code))
-	w.Write(buff.Bytes())
+	write(w, output, code)
 }
 
-// SendResponseError sends the error to the client as JSON via gin.Context.
-// rsp — structure with error details.
+// SendResponseError sends the error to the client as JSON.
+// err — structure with error details.
 func (s *Spond) SendResponseError(w http.ResponseWriter, err envelope.AppError) {
 	if !s.codeExists(err.Code) {
-		// It warn developer
+		// It error developer
 		panic(fmt.Errorf("Status code %d don`t exists", err.Code))
 	}
 
@@ -85,19 +75,11 @@ func (s *Spond) SendResponseError(w http.ResponseWriter, err envelope.AppError) 
 		},
 	}
 
-	var buff bytes.Buffer
-	if err := json.NewEncoder(&buff).Encode(output); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(int(err.Code))
-	w.Write(buff.Bytes())
+	write(w, output, err.Code)
 }
 
 // AppendCode adds a new status code and message to the statusMessages card.
-// If the code already exists, returns the errorAppendCode error.
+// If the code already exists, returns the error.
 func (s *Spond) AppendCode(code envelope.StatusCode, message string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
