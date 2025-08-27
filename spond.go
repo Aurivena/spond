@@ -3,6 +3,7 @@
 package spond
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,11 +31,14 @@ type Spond struct {
 }
 
 type writeSuccess struct {
-	Data  *any        `json:"data,omitempty"`
-	Error *writeError `json:"error,omitempty"`
+	Data any `json:"data,omitempty"`
 }
 
 type writeError struct {
+	Error errorDTO `json:"error"`
+}
+
+type errorDTO struct {
 	Title    string `json:"title"`
 	Message  string `json:"message"`
 	Solution string `json:"solution"`
@@ -51,38 +55,56 @@ func NewSpond() *Spond {
 // SendResponseSuccess sends a successful JSON envelope via gin.Context.
 // status is the envelope status, Successenvelope is the payload for the client.
 func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusCode, data any) {
-	if !s.codeExist(code) {
+	if !s.codeExists(code) {
 		// It warn developer
 		panic(fmt.Errorf("status code %d don`t exists", code))
+	}
+
+	if code == envelope.NoContent {
+		w.WriteHeader(int(code))
+		return
 	}
 
 	output := writeSuccess{
 		Data: &data,
 	}
 
+	var buff bytes.Buffer
+	if err := json.NewEncoder(&buff).Encode(output); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(int(code))
-	_ = json.NewEncoder(w).Encode(output)
+	w.Write(buff.Bytes())
 }
 
 // SendResponseError sends the error to the client as JSON via gin.Context.
 // rsp — structure with error details.
-func (s *Spond) SendResponseError(w http.ResponseWriter, err envelope.Error) {
-	if !s.codeExist(err.Code) {
+func (s *Spond) SendResponseError(w http.ResponseWriter, err envelope.AppError) {
+	if !s.codeExists(err.Code) {
 		// It warn developer
 		panic(fmt.Errorf("status code %d don`t exists", err.Code))
 	}
 
-	w.WriteHeader(int(err.Code))
-
-	output := writeSuccess{
-		Error: &writeError{
+	output := &writeError{
+		Error: errorDTO{
 			Message:  err.Detail.Message,
 			Title:    err.Detail.Title,
 			Solution: err.Detail.Solution,
 		},
 	}
 
-	_ = json.NewEncoder(w).Encode(output)
+	var buff bytes.Buffer
+	if err := json.NewEncoder(&buff).Encode(output); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(int(err.Code))
+	w.Write(buff.Bytes())
 }
 
 // AppendCode adds a new status code and message to the statusMessages card.
@@ -100,9 +122,9 @@ func (s *Spond) AppendCode(code envelope.StatusCode, message string) error {
 
 // BuildError forms an error structure for responding to the client.
 // If the input parameters do not pass validation, it returns an error with the UnprocessableEntity code.
-func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution string) *envelope.Error {
+func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution string) *envelope.AppError {
 	if err := validate(title, message); err != nil {
-		return &envelope.Error{
+		return &envelope.AppError{
 			Code: envelope.UnprocessableEntity,
 			Detail: envelope.ErrorDetail{
 				Title:    "invalid",
@@ -111,7 +133,7 @@ func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution st
 			},
 		}
 	}
-	return &envelope.Error{
+	return &envelope.AppError{
 		Code: code,
 		Detail: envelope.ErrorDetail{
 			Title:    title,
@@ -121,7 +143,7 @@ func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution st
 	}
 }
 
-func (s *Spond) codeExist(code envelope.StatusCode) bool {
+func (s *Spond) codeExists(code envelope.StatusCode) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
