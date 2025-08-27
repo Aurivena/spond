@@ -11,7 +11,7 @@ func (e StatusCode) String() string {
 	if str, ok := StatusMessages[e]; ok {
 		return str
 	}
-	return fmt.Sprintf("unknown  StatusCode (%d)", e)
+	return fmt.Sprintf("Unknown  StatusCode (%d)", e)
 }
 
 const (

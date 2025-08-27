@@ -5,7 +5,6 @@ package spond
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -13,17 +12,6 @@ import (
 
 	"github.com/Aurivena/spond/envelope"
 )
-
-const (
-	titleInvalid     = "invalid value for title"
-	messageInvalid   = "invalid value for message"
-	invalid          = "invalid"
-	unknownStatus    = "unknown status"
-	maxTitleLength   = 256
-	maxMessageLength = 1024
-)
-
-var errorAppendCode = errors.New("this code already exists")
 
 type Spond struct {
 	statusMessages map[envelope.StatusCode]string //storage status code and provides code append.
@@ -57,7 +45,7 @@ func NewSpond() *Spond {
 func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusCode, data any) {
 	if !s.codeExists(code) {
 		// It warn developer
-		panic(fmt.Errorf("status code %d don`t exists", code))
+		panic(fmt.Errorf("Status code %d don`t exists", code))
 	}
 
 	if code == envelope.NoContent {
@@ -85,7 +73,7 @@ func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusC
 func (s *Spond) SendResponseError(w http.ResponseWriter, err envelope.AppError) {
 	if !s.codeExists(err.Code) {
 		// It warn developer
-		panic(fmt.Errorf("status code %d don`t exists", err.Code))
+		panic(fmt.Errorf("Status code %d don`t exists", err.Code))
 	}
 
 	output := &writeError{
@@ -114,7 +102,7 @@ func (s *Spond) AppendCode(code envelope.StatusCode, message string) error {
 	defer s.mu.Unlock()
 
 	if _, exist := s.statusMessages[code]; exist {
-		return errorAppendCode
+		return envelope.ErrorAppendCode
 	}
 	s.statusMessages[code] = message
 	return nil
@@ -141,24 +129,4 @@ func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution st
 			Solution: solution,
 		},
 	}
-}
-
-func (s *Spond) codeExists(code envelope.StatusCode) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	_, exist := s.statusMessages[code]
-	return exist
-}
-
-// validate checks the length of the title and message.
-// Returns the error text when restrictions are violated.
-func validate(title, message string) error {
-	if len(title) == 0 || len(title) > maxTitleLength {
-		return fmt.Errorf("%s", titleInvalid)
-	}
-	if len(message) == 0 || len(message) > maxMessageLength {
-		return fmt.Errorf("%s", messageInvalid)
-	}
-	return nil
 }
