@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Aurivena/spond/core"
-	"github.com/Aurivena/spond/envelope"
+	"github.com/Aurivena/spond/v2/core"
+	"github.com/Aurivena/spond/v2/envelope"
 	"github.com/stretchr/testify/assert"
 )
 
