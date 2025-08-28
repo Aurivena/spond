@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Aurivena/spond/envelope"
+	"github.com/Aurivena/spond/v2/envelope"
 )
 
 // codeExists check is there status
