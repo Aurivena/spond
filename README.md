@@ -3,9 +3,9 @@
 </p>
 
 # Spond
-[![Go Reference](https://pkg.go.dev/badge/github.com/Aurivena/spond.svg)](https://pkg.go.dev/github.com/Aurivena/spond)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Aurivena/spond.svg)](https://pkg.go.dev/github.com/Aurivena/spond/v2)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Aurivena/spond)](https://goreportcard.com/report/github.com/Aurivena/spond)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Aurivena/spond)](https://goreportcard.com/report/github.com/Aurivena/spond/v2)
 
 ## Description
 
@@ -17,7 +17,7 @@
 ### Install
 
 ```bash
-go get github.com/Aurivena/spond/v2@v2.0.3
+go get github.com/Aurivena/spond/v2@v2.0.9
 ```
 
 ---
