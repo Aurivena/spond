@@ -17,7 +17,7 @@
 ### Install
 
 ```bash
-go get github.com/Aurivena/spond@v2.0.6
+go get github.com/Aurivena/spond@v2.0.8
 ```
 
 ---
@@ -34,7 +34,7 @@ go get github.com/Aurivena/spond@v2.0.6
 ### Work with API-output
 
 ```go
-import "github.com/Aurivena/spond/core"
+import "github.com/Aurivena/spond/v2/core"
 
 sp := spond.NewSpond()
 // Success output
@@ -47,7 +47,7 @@ sp.SendResponseError(c, sp.BuildError(spond.BadRequest, "Error", "incorect data"
 ### Append new code output
 
 ```go
-import "github.com/Aurivena/spond/core"
+import "github.com/Aurivena/spond/v2/core"
 
 sp := spond.NewSpond()
 err := sp.AppendCode(7777, "Мой статус")
