@@ -61,10 +61,13 @@ func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusC
 
 // SendResponseError sends the error to the client as JSON.
 // err — structure with error details.
-func (s *Spond) SendResponseError(w http.ResponseWriter, err envelope.AppError) {
+func (s *Spond) SendResponseError(w http.ResponseWriter, err *envelope.AppError) {
+	if err == nil {
+		return
+	}
 	if !s.codeExists(err.Code) {
 		// It error developer
-		panic(fmt.Errorf("Status code %d don`t exists", err.Code))
+		panic(fmt.Errorf("status code %d don`t exists", err.Code))
 	}
 
 	output := &writeError{

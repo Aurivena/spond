@@ -141,7 +141,7 @@ func TestSendResponseError(t *testing.T) {
 		Detail: envelope.ErrorDetail{Title: errTitle, Message: errMessage, Solution: ""},
 	}
 
-	s.SendResponseError(w, appErr)
+	s.SendResponseError(w, &appErr)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
