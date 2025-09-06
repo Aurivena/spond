@@ -17,7 +17,7 @@ type Spond struct {
 }
 
 type writeSuccess struct {
-	Data any `json:"-,omitempty"`
+	Data any
 }
 
 type writeError struct {
