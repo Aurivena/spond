@@ -12,7 +12,7 @@ import (
 )
 
 type writeSuccess struct {
-	Data any `json:"data,omitempty"`
+	Data any
 }
 type errorDTO struct {
 	Title    string `json:"title"`
@@ -111,12 +111,7 @@ func TestSendResponseSuccess(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
-
-	var out writeSuccess
-	err := json.Unmarshal(w.Body.Bytes(), &out)
-	assert.NoError(t, err)
-
-	assert.Equal(t, map[string]any{"foo": "bar"}, out.Data)
+	assert.JSONEq(t, `{"foo":"bar"}`, w.Body.String())
 }
 
 func TestSendResponseSuccess_NoContent(t *testing.T) {
