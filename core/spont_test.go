@@ -12,7 +12,7 @@ import (
 )
 
 type writeSuccess struct {
-	Data any `json:"data,omitempty"`
+	Data any `json:"-,omitempty"`
 }
 type errorDTO struct {
 	Title    string `json:"title"`
