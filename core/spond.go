@@ -16,10 +16,6 @@ type Spond struct {
 	mu             sync.RWMutex
 }
 
-type writeSuccess struct {
-	Data any
-}
-
 type writeError struct {
 	Code  string   `json:"code"`
 	Error errorDTO `json:"error"`
@@ -52,11 +48,7 @@ func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusC
 		return
 	}
 
-	output := writeSuccess{
-		Data: &data,
-	}
-
-	write(w, output, code)
+	write(w, &data, code)
 }
 
 // SendResponseError sends the error to the client as JSON.
