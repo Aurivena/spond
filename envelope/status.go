@@ -2,37 +2,38 @@ package envelope
 
 import "fmt"
 
-// Is required for challenge internal function
-type StatusCode int
-
-// String returns a string description of the statusCode from the StatusMessages dictionary.
-// If the code is not found, returns "unknown statusCode (value)".
-func (e StatusCode) String() string {
-	if str, ok := StatusMessages[e]; ok {
-		return str
+func AppendCode(code int, message string) error {
+	if _, exist := statusMessages[code]; exist {
+		return fmt.Errorf("Status code %d already exists", code)
 	}
-	return fmt.Sprintf("Unknown  StatusCode (%d)", e)
+	statusMessages[code] = message
+	return nil
+}
+
+func IsValid(code int) bool {
+	_, ok := statusMessages[code]
+	return ok
 }
 
 const (
-	Success               StatusCode = 200
-	ResourceCreated       StatusCode = 201
-	NoContent             StatusCode = 204
-	BadRequest            StatusCode = 400
-	Unauthorized          StatusCode = 401
-	Forbidden             StatusCode = 403
-	NotFound              StatusCode = 404
-	NotAcceptable         StatusCode = 406
-	ConfirmationTimeout   StatusCode = 408
-	ResourceAlreadyExists StatusCode = 409
-	ResourceInTrash       StatusCode = 410
-	BadHeader             StatusCode = 412
-	UnsupportedMediaType  StatusCode = 415
-	UnprocessableEntity   StatusCode = 422
-	InternalServerError   StatusCode = 500
+	Success               int = 200
+	ResourceCreated       int = 201
+	NoContent             int = 204
+	BadRequest            int = 400
+	Unauthorized          int = 401
+	Forbidden             int = 403
+	NotFound              int = 404
+	NotAcceptable         int = 406
+	ConfirmationTimeout   int = 408
+	ResourceAlreadyExists int = 409
+	ResourceInTrash       int = 410
+	BadHeader             int = 412
+	UnsupportedMediaType  int = 415
+	UnprocessableEntity   int = 422
+	InternalServerError   int = 500
 )
 
-var StatusMessages = map[StatusCode]string{
+var statusMessages = map[int]string{
 	Success:               "Success",
 	ResourceCreated:       "ResourceCreated",
 	NoContent:             "NoContent",

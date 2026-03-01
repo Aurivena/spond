@@ -12,8 +12,13 @@ import (
 )
 
 type Spond struct {
-	statusMessages map[envelope.StatusCode]string //storage status code and provides code append.
-	mu             sync.RWMutex
+	statusMessages map[int]string //storage status code and provides code append.
+	mu             *sync.RWMutex
+}
+
+var defaultSpond = &Spond{
+	statusMessages: make(map[int]string),
+	mu:             &sync.RWMutex{},
 }
 
 type writeError struct {
@@ -27,18 +32,10 @@ type errorDTO struct {
 	Solution string `json:"solution"`
 }
 
-// For initialization  struct Spond
-// Usage example
-// spond:=NewSpond()
-// spond.SendResponseSuccess(w, spond.Created, nil)
-func NewSpond() *Spond {
-	return &Spond{statusMessages: envelope.StatusMessages}
-}
-
 // SendResponseSuccess sends a successful JSON envelope.
 // status is the envelope status, is the payload for the client.
-func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusCode, data any) {
-	if !s.codeExists(code) {
+func SendResponseSuccess(w http.ResponseWriter, code int, data any) {
+	if !envelope.IsValid(code) {
 		// It error developer
 		panic(fmt.Errorf("Status code %d don`t exists", code))
 	}
@@ -53,11 +50,11 @@ func (s *Spond) SendResponseSuccess(w http.ResponseWriter, code envelope.StatusC
 
 // SendResponseError sends the error to the client as JSON.
 // err — structure with error details.
-func (s *Spond) SendResponseError(w http.ResponseWriter, err *envelope.AppError) {
+func SendResponseError(w http.ResponseWriter, err *envelope.AppError) {
 	if err == nil {
 		return
 	}
-	if !s.codeExists(err.Code) {
+	if !envelope.IsValid(int(err.Code)) {
 		// It error developer
 		panic(fmt.Errorf("status code %d don`t exists", err.Code))
 	}
@@ -75,27 +72,23 @@ func (s *Spond) SendResponseError(w http.ResponseWriter, err *envelope.AppError)
 
 // AppendCode adds a new status code and message to the statusMessages card.
 // If the code already exists, returns the error.
-func (s *Spond) AppendCode(code envelope.StatusCode, message string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func AppendCode(code int, message string) error {
+	defaultSpond.mu.Lock()
+	defer defaultSpond.mu.Unlock()
 
-	if _, exist := s.statusMessages[code]; exist {
-		return envelope.ErrorAppendCode
-	}
-	s.statusMessages[code] = message
-	return nil
+	return envelope.AppendCode(code, message)
 }
 
 // BuildError forms an error structure for responding to the client.
 // If the input parameters do not pass validation, it returns an error with the UnprocessableEntity code.
-func (s *Spond) BuildError(code envelope.StatusCode, title, message, solution string) *envelope.AppError {
+func BuildError(code int, title, message, solution string) *envelope.AppError {
 	if err := validate(title, message); err != nil {
 		return &envelope.AppError{
 			Code: envelope.UnprocessableEntity,
 			Detail: envelope.ErrorDetail{
-				Title:    envelope.Invalid.Error(),
+				Title:    envelope.Invalid,
 				Message:  err.Error(),
-				Solution: envelope.SolutionError.Error(),
+				Solution: envelope.SolutionError,
 			},
 		}
 	}

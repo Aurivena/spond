@@ -24,21 +24,17 @@ type writeError struct {
 }
 
 func TestAppendCode(t *testing.T) {
-	s := core.NewSpond()
-
-	err := s.AppendCode(envelope.StatusCode(9999), "new code")
+	err := core.AppendCode(9999, "new code")
 	assert.NoError(t, err)
 
-	err = s.AppendCode(envelope.StatusCode(9999), "again")
+	err = core.AppendCode(9999, "again")
 	assert.Error(t, err)
 }
 
 func TestBuildError(t *testing.T) {
-	s := core.NewSpond()
-
 	tests := []struct {
 		name     string
-		code     envelope.StatusCode
+		code     int
 		title    string
 		message  string
 		solution string
@@ -53,9 +49,9 @@ func TestBuildError(t *testing.T) {
 			want: envelope.AppError{
 				Code: envelope.UnprocessableEntity,
 				Detail: envelope.ErrorDetail{
-					Title:    "invalid",
-					Message:  "invalid value for title",
-					Solution: "recheck limits for title and message pls :)",
+					Title:    envelope.Invalid,
+					Message:  envelope.TitleInvalid,
+					Solution: "Recheck limits for title and message pls :)",
 				},
 			},
 		},
@@ -68,9 +64,9 @@ func TestBuildError(t *testing.T) {
 			want: envelope.AppError{
 				Code: envelope.UnprocessableEntity,
 				Detail: envelope.ErrorDetail{
-					Title:    "invalid",
-					Message:  "invalid value for message",
-					Solution: "recheck limits for title and message pls :)",
+					Title:    envelope.Invalid,
+					Message:  envelope.MessageInvalid,
+					Solution: "Recheck limits for title and message pls :)",
 				},
 			},
 		},
@@ -93,7 +89,7 @@ func TestBuildError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPtr := s.BuildError(tt.code, tt.title, tt.message, tt.solution)
+			gotPtr := core.BuildError(tt.code, tt.title, tt.message, tt.solution)
 			if gotPtr == nil {
 				t.Fatalf("BuildError returned nil")
 			}
@@ -103,11 +99,10 @@ func TestBuildError(t *testing.T) {
 }
 
 func TestSendResponseSuccess(t *testing.T) {
-	s := core.NewSpond()
 	w := httptest.NewRecorder()
 
 	payload := map[string]string{"foo": "bar"}
-	s.SendResponseSuccess(w, envelope.Success, payload)
+	core.SendResponseSuccess(w, envelope.Success, payload)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
@@ -115,10 +110,9 @@ func TestSendResponseSuccess(t *testing.T) {
 }
 
 func TestSendResponseSuccess_NoContent(t *testing.T) {
-	s := core.NewSpond()
 	w := httptest.NewRecorder()
 
-	s.SendResponseSuccess(w, envelope.NoContent, nil)
+	core.SendResponseSuccess(w, envelope.NoContent, nil)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Equal(t, "", w.Header().Get("Content-Type"))
@@ -126,7 +120,6 @@ func TestSendResponseSuccess_NoContent(t *testing.T) {
 }
 
 func TestSendResponseError(t *testing.T) {
-	s := core.NewSpond()
 	w := httptest.NewRecorder()
 
 	errTitle := "Доступ запрещен"
@@ -136,7 +129,7 @@ func TestSendResponseError(t *testing.T) {
 		Detail: envelope.ErrorDetail{Title: errTitle, Message: errMessage, Solution: ""},
 	}
 
-	s.SendResponseError(w, &appErr)
+	core.SendResponseError(w, &appErr)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))

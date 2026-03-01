@@ -3,9 +3,9 @@
 </p>
 
 # Spond
-[![Go Reference](https://pkg.go.dev/badge/github.com/Aurivena/spond.svg)](https://pkg.go.dev/github.com/Aurivena/spond/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Aurivena/spond.svg)](https://pkg.go.dev/github.com/Aurivena/spond/v3)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Aurivena/spond)](https://goreportcard.com/report/github.com/Aurivena/spond/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Aurivena/spond)](https://goreportcard.com/report/github.com/Aurivena/spond/3)
 
 ## Description
 
@@ -17,7 +17,7 @@
 ### Install
 
 ```bash
-go get github.com/Aurivena/spond/v2@v2.0.13
+go get github.com/Aurivena/spond/v3@v3.0.0
 ```
 
 ---
@@ -34,7 +34,7 @@ go get github.com/Aurivena/spond/v2@v2.0.13
 ### Work with API-output
 
 ```go
-import "github.com/Aurivena/spond/v2/core"
+import "github.com/Aurivena/spond/v3/core"
 
 sp := spond.NewSpond()
 // Success output
@@ -47,7 +47,7 @@ sp.SendResponseError(c, sp.BuildError(spond.BadRequest, "Error", "incorect data"
 ### Append new code output
 
 ```go
-import "github.com/Aurivena/spond/v2/core"
+import "github.com/Aurivena/spond/v3/core"
 
 sp := spond.NewSpond()
 err := sp.AppendCode(7777, "Мой статус")

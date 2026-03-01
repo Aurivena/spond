@@ -7,6 +7,6 @@ type ErrorDetail struct {
 }
 
 type AppError struct {
-	Code   StatusCode
+	Code   int
 	Detail ErrorDetail
 }
