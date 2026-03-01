@@ -41,7 +41,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     netsp.SendResponseSuccess(w, http.StatusOK, data)
 }
 
-#Error response
+//Error response
 func errorHandler(w http.ResponseWriter, r *http.Request) {
     // BuildError validates title and message lengths automatically
     err := netsp.BuildError(
