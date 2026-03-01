@@ -30,7 +30,7 @@ go get github.com/Aurivena/spond/v3@v3.0.0
 ### Work with API-output
 
 ```go
-import "github.com/Aurivena/spond/v3/core"
+import "github.com/Aurivena/spond/v3/netsp"
 
 sp := spond.NewSpond()
 // Success output
@@ -43,19 +43,17 @@ sp.SendResponseError(c, sp.BuildError(spond.BadRequest, "Error", "incorect data"
 ### Append new code output
 
 ```go
-import "github.com/Aurivena/spond/v3/core"
+import "github.com/Aurivena/spond/v3/netsp"
 
-sp := spond.NewSpond()
-err := sp.AppendCode(7777, "Мой статус")
-if err != nil {
-    panic(err)
+if err := netsp.AppendCode(7777, "Мой статус"); err != nil {
+	return err
 }
 ```
 ## Project Structure
 
 ```
 spond/
-├── core/        # Core logic: helpers, response builders, encoders
+├── netsp/        # Core logic: helpers, response builders, encoders
 └── envelope/    # Domain-level error and status handling
 ```
 ## Testing

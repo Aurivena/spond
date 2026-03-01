@@ -1,4 +1,4 @@
-package core
+package netsp
 
 import (
 	"bytes"
@@ -6,18 +6,30 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+)
 
-	"github.com/Aurivena/spond/v3/envelope"
+const (
+	MaxTitleLength   = 256
+	MaxMessageLength = 1024
+)
+
+const (
+	ErrorAppendCode = "This code already exists"
+	TitleInvalid    = "Invalid value for title"
+	MessageInvalid  = "Invalid value for message"
+	Invalid         = "Invalid"
+	UnknownStatus   = "Unknown status"
+	SolutionError   = "Recheck limits for title and message pls :)"
 )
 
 // validate checks the length of the title and message.
 // Returns the error when restrictions are violated.
 func validate(title, message string) error {
-	if len(title) == 0 || len(title) > envelope.MaxTitleLength {
-		return fmt.Errorf("%w", errors.New(envelope.TitleInvalid))
+	if len(title) == 0 || len(title) > MaxTitleLength {
+		return fmt.Errorf("%w", errors.New(TitleInvalid))
 	}
-	if len(message) == 0 || len(message) > envelope.MaxMessageLength {
-		return fmt.Errorf("%w", errors.New(envelope.MessageInvalid))
+	if len(message) == 0 || len(message) > MaxMessageLength {
+		return fmt.Errorf("%w", errors.New(MessageInvalid))
 	}
 	return nil
 }

@@ -1,8 +1,16 @@
-package envelope
+package netsp
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
-func AppendCode(code int, message string) error {
+func appendCode(code int, message string) error {
+	mu := sync.RWMutex{}
+
+	mu.Lock()
+	defer mu.Unlock()
+
 	if _, exist := statusMessages[code]; exist {
 		return fmt.Errorf("Status code %d already exists", code)
 	}
@@ -10,7 +18,7 @@ func AppendCode(code int, message string) error {
 	return nil
 }
 
-func IsValid(code int) bool {
+func isValid(code int) bool {
 	_, ok := statusMessages[code]
 	return ok
 }

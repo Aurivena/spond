@@ -1,24 +1,22 @@
-// Package core lives to facilitate communication
+// Package netsp lives to facilitate communication
 // between server and web via JSON structures.
-package core
+package netsp
 
 import (
 	"fmt"
+	"log"
 	"net/http"
-
-	"sync"
-
-	"github.com/Aurivena/spond/v3/envelope"
 )
 
-type Spond struct {
-	statusMessages map[int]string //storage status code and provides code append.
-	mu             *sync.RWMutex
+type ErrorDetail struct {
+	Title    string
+	Message  string
+	Solution string
 }
 
-var defaultSpond = &Spond{
-	statusMessages: make(map[int]string),
-	mu:             &sync.RWMutex{},
+type AppError struct {
+	Code   int
+	Detail ErrorDetail
 }
 
 type writeError struct {
@@ -34,29 +32,32 @@ type errorDTO struct {
 
 // SendResponseSuccess sends a successful JSON envelope.
 // status is the envelope status, is the payload for the client.
-func SendResponseSuccess(w http.ResponseWriter, code int, data any) {
-	if !envelope.IsValid(code) {
-		// It error developer
-		panic(fmt.Errorf("Status code %d don`t exists", code))
+// Generics Type usages for typing data
+func SendResponseSuccess[T any](w http.ResponseWriter, code int, data T) {
+	if !isValid(code) {
+		log.Printf("[ERROR] SendResponseSuccess: status code %d don`t exists", code)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
-	if code == envelope.NoContent {
+	if code == NoContent {
 		w.WriteHeader(int(code))
 		return
 	}
 
-	write(w, &data, code)
+	write(w, data, code)
 }
 
 // SendResponseError sends the error to the client as JSON.
 // err — structure with error details.
-func SendResponseError(w http.ResponseWriter, err *envelope.AppError) {
+func SendResponseError(w http.ResponseWriter, err *AppError) {
 	if err == nil {
 		return
 	}
-	if !envelope.IsValid(int(err.Code)) {
-		// It error developer
-		panic(fmt.Errorf("status code %d don`t exists", err.Code))
+	if !isValid(int(err.Code)) {
+		log.Printf("[ERROR] SendResponseSuccess: status code %d don`t exists", err.Code)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
 	output := &writeError{
@@ -73,28 +74,33 @@ func SendResponseError(w http.ResponseWriter, err *envelope.AppError) {
 // AppendCode adds a new status code and message to the statusMessages card.
 // If the code already exists, returns the error.
 func AppendCode(code int, message string) error {
-	defaultSpond.mu.Lock()
-	defer defaultSpond.mu.Unlock()
+	if code < 100 || code > 599 {
+		return fmt.Errorf("spond: invalid HTTP status code %d", code)
+	}
 
-	return envelope.AppendCode(code, message)
+	if err := appendCode(code, message); err != nil {
+		return fmt.Errorf("spond: failed to append code %d: %w", code, err)
+	}
+
+	return nil
 }
 
 // BuildError forms an error structure for responding to the client.
 // If the input parameters do not pass validation, it returns an error with the UnprocessableEntity code.
-func BuildError(code int, title, message, solution string) *envelope.AppError {
+func BuildError(code int, title, message, solution string) *AppError {
 	if err := validate(title, message); err != nil {
-		return &envelope.AppError{
-			Code: envelope.UnprocessableEntity,
-			Detail: envelope.ErrorDetail{
-				Title:    envelope.Invalid,
+		return &AppError{
+			Code: UnprocessableEntity,
+			Detail: ErrorDetail{
+				Title:    Invalid,
 				Message:  err.Error(),
-				Solution: envelope.SolutionError,
+				Solution: SolutionError,
 			},
 		}
 	}
-	return &envelope.AppError{
+	return &AppError{
 		Code: code,
-		Detail: envelope.ErrorDetail{
+		Detail: ErrorDetail{
 			Title:    title,
 			Message:  message,
 			Solution: solution,
