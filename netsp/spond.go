@@ -19,12 +19,12 @@ type AppError struct {
 	Detail ErrorDetail
 }
 
-type writeError struct {
+type WriteError struct {
 	Code  string   `json:"code"`
-	Error errorDTO `json:"error"`
+	Error ErrorDTO `json:"error"`
 }
 
-type errorDTO struct {
+type ErrorDTO struct {
 	Title    string `json:"title"`
 	Message  string `json:"message"`
 	Solution string `json:"solution"`
@@ -35,12 +35,12 @@ type errorDTO struct {
 // Generics Type usages for typing data
 func SendResponseSuccess[T any](w http.ResponseWriter, code int, data T) {
 	if !isValid(code) {
-		log.Printf("[ERROR] SendResponseSuccess: status code %d don`t exists", code)
+		log.Printf("[ERROR] SendResponseSuccess: status code %d does not exist", code)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	if code == NoContent {
+	if code == http.StatusNoContent {
 		w.WriteHeader(int(code))
 		return
 	}
@@ -55,13 +55,14 @@ func SendResponseError(w http.ResponseWriter, err *AppError) {
 		return
 	}
 	if !isValid(int(err.Code)) {
-		log.Printf("[ERROR] SendResponseSuccess: status code %d don`t exists", err.Code)
+		log.Printf("[ERROR] SendResponseError: status code %d does not exist", err.Code)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	output := &writeError{
-		Error: errorDTO{
+	output := &WriteError{
+		Code: statusMessages[err.Code],
+		Error: ErrorDTO{
 			Message:  err.Detail.Message,
 			Title:    err.Detail.Title,
 			Solution: err.Detail.Solution,
@@ -90,11 +91,11 @@ func AppendCode(code int, message string) error {
 func BuildError(code int, title, message, solution string) *AppError {
 	if err := validate(title, message); err != nil {
 		return &AppError{
-			Code: UnprocessableEntity,
+			Code: http.StatusUnprocessableEntity,
 			Detail: ErrorDetail{
-				Title:    Invalid,
+				Title:    Invalid.Error(),
 				Message:  err.Error(),
-				Solution: SolutionError,
+				Solution: SolutionError.Error(),
 			},
 		}
 	}

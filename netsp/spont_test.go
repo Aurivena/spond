@@ -10,15 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type errorDTO struct {
-	Title    string `json:"title"`
-	Message  string `json:"message"`
-	Solution string `json:"solution,omitempty"`
-}
-type writeError struct {
-	Error errorDTO `json:"error"`
-}
-
 func TestAppendCode(t *testing.T) {
 	err := netsp.AppendCode(9999, "again")
 	assert.Error(t, err)
@@ -38,42 +29,42 @@ func TestBuildError(t *testing.T) {
 	}{
 		{
 			name:     "пустой title → UnprocessableEntity + invalid",
-			code:     netsp.UnprocessableEntity,
+			code:     http.StatusUnprocessableEntity,
 			title:    "",
 			message:  "Описание",
 			solution: "",
 			want: netsp.AppError{
-				Code: netsp.UnprocessableEntity,
+				Code: http.StatusUnprocessableEntity,
 				Detail: netsp.ErrorDetail{
-					Title:    netsp.Invalid,
-					Message:  netsp.TitleInvalid,
-					Solution: "Recheck limits for title and message pls :)",
+					Title:    netsp.Invalid.Error(),
+					Message:  netsp.TitleInvalid.Error(),
+					Solution: "recheck limits for title and message pls :)",
 				},
 			},
 		},
 		{
 			name:     "пустой message → UnprocessableEntity + invalid",
-			code:     netsp.UnprocessableEntity,
+			code:     http.StatusUnprocessableEntity,
 			title:    "title",
 			message:  "",
 			solution: "",
 			want: netsp.AppError{
-				Code: netsp.UnprocessableEntity,
+				Code: http.StatusUnprocessableEntity,
 				Detail: netsp.ErrorDetail{
-					Title:    netsp.Invalid,
-					Message:  netsp.MessageInvalid,
-					Solution: "Recheck limits for title and message pls :)",
+					Title:    netsp.Invalid.Error(),
+					Message:  netsp.MessageInvalid.Error(),
+					Solution: "recheck limits for title and message pls :)",
 				},
 			},
 		},
 		{
 			name:     "валидный ввод → указанный код и детали",
-			code:     netsp.BadRequest,
+			code:     http.StatusBadRequest,
 			title:    "Bad input",
 			message:  "Некорректные данные",
 			solution: "Проверьте поля",
 			want: netsp.AppError{
-				Code: netsp.BadRequest,
+				Code: http.StatusBadRequest,
 				Detail: netsp.ErrorDetail{
 					Title:    "Bad input",
 					Message:  "Некорректные данные",
@@ -98,7 +89,7 @@ func TestSendResponseSuccess(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	payload := map[string]string{"foo": "bar"}
-	netsp.SendResponseSuccess(w, netsp.Success, payload)
+	netsp.SendResponseSuccess(w, http.StatusOK, payload)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
@@ -108,7 +99,7 @@ func TestSendResponseSuccess(t *testing.T) {
 func TestSendResponseSuccess_NoContent(t *testing.T) {
 	w := httptest.NewRecorder()
 
-	netsp.SendResponseSuccess[any](w, netsp.NoContent, nil)
+	netsp.SendResponseSuccess[any](w, http.StatusNoContent, nil)
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Equal(t, "", w.Header().Get("Content-Type"))
@@ -121,7 +112,7 @@ func TestSendResponseError(t *testing.T) {
 	errTitle := "Доступ запрещен"
 	errMessage := "У вас недостаточно прав"
 	appErr := netsp.AppError{
-		Code:   netsp.BadRequest,
+		Code:   http.StatusBadRequest,
 		Detail: netsp.ErrorDetail{Title: errTitle, Message: errMessage, Solution: ""},
 	}
 
@@ -130,7 +121,7 @@ func TestSendResponseError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 
-	var out writeError
+	var out netsp.WriteError
 	err := json.Unmarshal(w.Body.Bytes(), &out)
 	assert.NoError(t, err)
 

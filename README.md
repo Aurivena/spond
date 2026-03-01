@@ -30,14 +30,29 @@ go get github.com/Aurivena/spond/v3@v3.0.0
 ### Work with API-output
 
 ```go
-import "github.com/Aurivena/spond/v3/netsp"
+import (
+    "net/http"
+    "github.com/Aurivena/spond/v3/netsp"
+)
 
-sp := spond.NewSpond()
-// Success output
-sp.SendResponseSuccess(w, spond.Success, map[string]string{"foo": "bar"})
-// Error
-sp.SendResponseError(c, sp.BuildError(spond.BadRequest, "Error", "incorect data","Change pls their input data"))
-````
+//Success response
+func handler(w http.ResponseWriter, r *http.Request) {
+    data := map[string]string{"foo": "bar"}
+    netsp.SendResponseSuccess(w, http.StatusOK, data)
+}
+
+#Error response
+func errorHandler(w http.ResponseWriter, r *http.Request) {
+    // BuildError validates title and message lengths automatically
+    err := netsp.BuildError(
+        http.StatusBadRequest, 
+        "Invalid Input", 
+        "The provided data is incorrect", 
+        "Please check the documentation and try again",
+    )
+    netsp.SendResponseError(w, err)
+}
+```
 
 ## Extension
 ### Append new code output
@@ -45,8 +60,8 @@ sp.SendResponseError(c, sp.BuildError(spond.BadRequest, "Error", "incorect data"
 ```go
 import "github.com/Aurivena/spond/v3/netsp"
 
-if err := netsp.AppendCode(7777, "Мой статус"); err != nil {
-	return err
+if err := netsp.AppendCode(418, "I'm a teapot"); err != nil {
+    log.Fatal(err)
 }
 ```
 ## Project Structure
@@ -54,7 +69,6 @@ if err := netsp.AppendCode(7777, "Мой статус"); err != nil {
 ```
 spond/
 ├── netsp/        # Core logic: helpers, response builders, encoders
-└── envelope/    # Domain-level error and status handling
 ```
 ## Testing
 
