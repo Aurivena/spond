@@ -8,7 +8,7 @@ import (
 
 	"sync"
 
-	"github.com/Aurivena/spond/v2/envelope"
+	"github.com/Aurivena/spond/v3/envelope"
 )
 
 type Spond struct {

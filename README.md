@@ -7,10 +7,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Aurivena/spond)](https://goreportcard.com/report/github.com/Aurivena/spond/3)
 
-## Description
-
-- It is a compact library for standardized communication between the server (in Go) and web clients via JSON responses.
-- Solves the problem of unified success/error structures for the API, custom response codes and unified error handling.
 
 ---
 

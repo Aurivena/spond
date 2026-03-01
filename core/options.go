@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Aurivena/spond/v2/envelope"
+	"github.com/Aurivena/spond/v3/envelope"
 )
 
 // validate checks the length of the title and message.

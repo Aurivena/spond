@@ -1,4 +1,4 @@
-module github.com/Aurivena/spond/v2
+module github.com/Aurivena/spond/v3
 
 go 1.23.0
 
