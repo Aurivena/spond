@@ -3,21 +3,17 @@
 </p>
 
 # Spond
-[![Go Reference](https://pkg.go.dev/badge/github.com/Aurivena/spond.svg)](https://pkg.go.dev/github.com/Aurivena/spond/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Aurivena/spond.svg)](https://pkg.go.dev/github.com/Aurivena/spond/v3)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Aurivena/spond)](https://goreportcard.com/report/github.com/Aurivena/spond/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Aurivena/spond)](https://goreportcard.com/report/github.com/Aurivena/spond/3)
 
-## Description
-
-- It is a compact library for standardized communication between the server (in Go) and web clients via JSON responses.
-- Solves the problem of unified success/error structures for the API, custom response codes and unified error handling.
 
 ---
 
 ### Install
 
 ```bash
-go get github.com/Aurivena/spond/v2@v2.0.13
+go get github.com/Aurivena/spond/v3@v3.0.0
 ```
 
 ---
@@ -34,33 +30,45 @@ go get github.com/Aurivena/spond/v2@v2.0.13
 ### Work with API-output
 
 ```go
-import "github.com/Aurivena/spond/v2/core"
+import (
+    "net/http"
+    "github.com/Aurivena/spond/v3/netsp"
+)
 
-sp := spond.NewSpond()
-// Success output
-sp.SendResponseSuccess(w, spond.Success, map[string]string{"foo": "bar"})
-// Error
-sp.SendResponseError(c, sp.BuildError(spond.BadRequest, "Error", "incorect data","Change pls their input data"))
-````
+//Success response
+func handler(w http.ResponseWriter, r *http.Request) {
+    data := map[string]string{"foo": "bar"}
+    netsp.SendResponseSuccess(w, http.StatusOK, data)
+}
+
+#Error response
+func errorHandler(w http.ResponseWriter, r *http.Request) {
+    // BuildError validates title and message lengths automatically
+    err := netsp.BuildError(
+        http.StatusBadRequest, 
+        "Invalid Input", 
+        "The provided data is incorrect", 
+        "Please check the documentation and try again",
+    )
+    netsp.SendResponseError(w, err)
+}
+```
 
 ## Extension
 ### Append new code output
 
 ```go
-import "github.com/Aurivena/spond/v2/core"
+import "github.com/Aurivena/spond/v3/netsp"
 
-sp := spond.NewSpond()
-err := sp.AppendCode(7777, "Мой статус")
-if err != nil {
-    panic(err)
+if err := netsp.AppendCode(418, "I'm a teapot"); err != nil {
+    log.Fatal(err)
 }
 ```
 ## Project Structure
 
 ```
 spond/
-├── core/        # Core logic: helpers, response builders, encoders
-└── envelope/    # Domain-level error and status handling
+├── netsp/        # Core logic: helpers, response builders, encoders
 ```
 ## Testing
 

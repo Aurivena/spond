@@ -1,8 +1,6 @@
-module github.com/Aurivena/spond/v2
+module github.com/Aurivena/spond/v3
 
-go 1.23.0
-
-toolchain go1.24.6
+go 1.26.0
 
 require github.com/stretchr/testify v1.10.0
 

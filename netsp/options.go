@@ -1,38 +1,41 @@
-package core
+package netsp
 
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
-
-	"github.com/Aurivena/spond/v2/envelope"
 )
 
-// codeExists check is there status
-func (s *Spond) codeExists(code envelope.StatusCode) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+const (
+	MaxTitleLength   = 256
+	MaxMessageLength = 1024
+)
 
-	_, exist := s.statusMessages[code]
-	return exist
-}
+var (
+	ErrorAppendCode = errors.New("this code already exists")
+	TitleInvalid    = errors.New("invalid value for title")
+	MessageInvalid  = errors.New("invalid value for message")
+	Invalid         = errors.New("invalid")
+	UnknownStatus   = errors.New("unknown status")
+	SolutionError   = errors.New("recheck limits for title and message pls :)")
+)
 
 // validate checks the length of the title and message.
 // Returns the error when restrictions are violated.
 func validate(title, message string) error {
-	if len(title) == 0 || len(title) > envelope.MaxTitleLength {
-		return fmt.Errorf("%w", envelope.TitleInvalid)
+	if len(title) == 0 || len(title) > MaxTitleLength {
+		return TitleInvalid
 	}
-	if len(message) == 0 || len(message) > envelope.MaxMessageLength {
-		return fmt.Errorf("%w", envelope.MessageInvalid)
+	if len(message) == 0 || len(message) > MaxMessageLength {
+		return MessageInvalid
 	}
 	return nil
 }
 
 // write encodes response as JSON and sends it to client.
 // Always sets Content-Type to application/json; charset=utf-8.
-func write(w http.ResponseWriter, output any, code envelope.StatusCode) {
+func write(w http.ResponseWriter, output any, code int) {
 	// set data for future json
 	var buff bytes.Buffer
 	if err := json.NewEncoder(&buff).Encode(output); err != nil {
@@ -42,6 +45,6 @@ func write(w http.ResponseWriter, output any, code envelope.StatusCode) {
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(int(code))
+	w.WriteHeader(code)
 	w.Write(buff.Bytes())
 }
