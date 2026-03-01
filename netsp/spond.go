@@ -19,6 +19,10 @@ type AppError struct {
 	Detail ErrorDetail
 }
 
+func (e *AppError) Error() string {
+	return fmt.Sprintf("[%s] %s", e.Detail.Title, e.Detail.Message)
+}
+
 type WriteError struct {
 	Code  string   `json:"code"`
 	Error ErrorDTO `json:"error"`
