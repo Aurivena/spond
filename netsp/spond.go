@@ -3,7 +3,7 @@
 package netsp
 
 import (
-	"github.com/Aurivena/spond/v3/netstatus"
+	"github.com/Aurivena/spond/v4/netstatus"
 )
 
 type ErrorDetail struct {

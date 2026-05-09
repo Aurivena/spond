@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Aurivena/spond/v3/netsp"
-	"github.com/Aurivena/spond/v3/netstatus"
+	"github.com/Aurivena/spond/v4/netsp"
+	"github.com/Aurivena/spond/v4/netstatus"
 	"github.com/stretchr/testify/assert"
 )
 

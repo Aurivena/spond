@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Aurivena/spond/v3/netoutput"
-	"github.com/Aurivena/spond/v3/netsp"
-	"github.com/Aurivena/spond/v3/netstatus"
+	"github.com/Aurivena/spond/v4/netoutput"
+	"github.com/Aurivena/spond/v4/netsp"
+	"github.com/Aurivena/spond/v4/netstatus"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 )

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Aurivena/spond/v3/netsp"
-	"github.com/Aurivena/spond/v3/netstatus"
+	"github.com/Aurivena/spond/v4/netsp"
+	"github.com/Aurivena/spond/v4/netstatus"
 	"golang.org/x/net/websocket"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
