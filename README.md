@@ -13,7 +13,7 @@
 ### Install
 
 ```bash
-go get github.com/Aurivena/spond/v4@v4.0.0
+go get github.com/Aurivena/spond/v4@v4.0.1
 ```
 
 ---
@@ -35,9 +35,9 @@ go get github.com/Aurivena/spond/v4@v4.0.0
 ```go
 import (
     "net/http"
-    "github.com/Aurivena/spond/v3/netoutput"
-    "github.com/Aurivena/spond/v3/netsp"
-    "github.com/Aurivena/spond/v3/netstatus"
+    "github.com/Aurivena/spond/v4/netoutput"
+    "github.com/Aurivena/spond/v4/netsp"
+    "github.com/Aurivena/spond/v4/netstatus"
 )
 
 // Успешный ответ
@@ -68,9 +68,9 @@ func errorHandler(w http.ResponseWriter, r *http.Request) {
 ```go
 import (
     "google.golang.org/grpc"
-    "github.com/Aurivena/spond/v3/netoutput"
-    "github.com/Aurivena/spond/v3/netsp"
-    "github.com/Aurivena/spond/v3/netstatus"
+    "github.com/Aurivena/spond/v4/netoutput"
+    "github.com/Aurivena/spond/v4/netsp"
+    "github.com/Aurivena/spond/v4/netstatus"
 )
 
 func grpcHandler(stream grpc.ServerStream) error {
@@ -88,9 +88,9 @@ func grpcHandler(stream grpc.ServerStream) error {
 ```go
 import (
     "golang.org/x/net/websocket"
-    "github.com/Aurivena/spond/v3/netoutput"
-    "github.com/Aurivena/spond/v3/netsp"
-    "github.com/Aurivena/spond/v3/netstatus"
+    "github.com/Aurivena/spond/v4/netoutput"
+    "github.com/Aurivena/spond/v4/netsp"
+    "github.com/Aurivena/spond/vs/netstatus"
 )
 
 func wsHandler(conn *websocket.Conn) error {
