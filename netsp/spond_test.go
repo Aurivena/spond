@@ -1,22 +1,13 @@
 package netsp_test
 
 import (
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/Aurivena/spond/v3/netsp"
+	"github.com/Aurivena/spond/v3/netstatus"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestAppendCode(t *testing.T) {
-	err := netsp.AppendCode(9999, "again")
-	assert.Error(t, err)
-
-	err = netsp.AppendCode(204, "no content")
-	assert.Error(t, err)
-}
 
 func TestValidateBuildError(t *testing.T) {
 	tests := []struct {
@@ -74,21 +65,21 @@ func TestValidateBuildError(t *testing.T) {
 func TestBuildError(t *testing.T) {
 	tests := []struct {
 		name     string
-		code     int
+		code     netstatus.Code
 		title    string
 		message  string
 		solution string
-		want     netsp.AppError
+		want     netsp.Response[netsp.ErrorDetail]
 	}{
 		{
 			name:     "стандартный случай",
-			code:     http.StatusBadRequest,
+			code:     netstatus.CodeBadRequest,
 			title:    "Ошибка",
 			message:  "Что-то пошло не так",
 			solution: "Попробуйте снова",
-			want: netsp.AppError{
-				Code: http.StatusBadRequest,
-				Detail: netsp.ErrorDetail{
+			want: netsp.Response[netsp.ErrorDetail]{
+				Code: netstatus.CodeBadRequest,
+				Data: netsp.ErrorDetail{
 					Title:    "Ошибка",
 					Message:  "Что-то пошло не так",
 					Solution: "Попробуйте снова",
@@ -97,13 +88,13 @@ func TestBuildError(t *testing.T) {
 		},
 		{
 			name:     "пустые значения (свобода ответа)",
-			code:     http.StatusInternalServerError,
+			code:     netstatus.CodeInternalError,
 			title:    "",
 			message:  "",
 			solution: "",
-			want: netsp.AppError{
-				Code: http.StatusInternalServerError,
-				Detail: netsp.ErrorDetail{
+			want: netsp.Response[netsp.ErrorDetail]{
+				Code: netstatus.CodeInternalError,
+				Data: netsp.ErrorDetail{
 					Title:    "",
 					Message:  "",
 					Solution: "",
@@ -112,13 +103,13 @@ func TestBuildError(t *testing.T) {
 		},
 		{
 			name:     "очень длинные строки (свобода ответа)",
-			code:     http.StatusOK,
+			code:     netstatus.CodeSuccess,
 			title:    string(make([]byte, 1000)),
 			message:  string(make([]byte, 5000)),
 			solution: "Много текста",
-			want: netsp.AppError{
-				Code: http.StatusOK,
-				Detail: netsp.ErrorDetail{
+			want: netsp.Response[netsp.ErrorDetail]{
+				Code: netstatus.CodeSuccess,
+				Data: netsp.ErrorDetail{
 					Title:    string(make([]byte, 1000)),
 					Message:  string(make([]byte, 5000)),
 					Solution: "Много текста",
@@ -129,7 +120,12 @@ func TestBuildError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPtr := netsp.BuildError(tt.code, tt.title, tt.message, tt.solution)
+			data := netsp.ErrorDetail{
+				Title:    tt.title,
+				Message:  tt.message,
+				Solution: tt.solution,
+			}
+			gotPtr := netsp.BuildError(tt.code, data)
 
 			if gotPtr == nil {
 				t.Fatalf("BuildError вернул nil, хотя должен был вернуть объект AppError")
@@ -138,49 +134,4 @@ func TestBuildError(t *testing.T) {
 			assert.Equal(t, tt.want, *gotPtr, "Ошибка сборки объекта в случае: %s", tt.name)
 		})
 	}
-}
-
-func TestSendResponseSuccess(t *testing.T) {
-	w := httptest.NewRecorder()
-
-	payload := map[string]string{"foo": "bar"}
-	netsp.Write(w, http.StatusOK, payload)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
-	assert.JSONEq(t, `{"foo":"bar"}`, w.Body.String())
-}
-
-func TestSendResponseSuccess_NoContent(t *testing.T) {
-	w := httptest.NewRecorder()
-
-	netsp.Write[any](w, http.StatusNoContent, nil)
-
-	assert.Equal(t, http.StatusNoContent, w.Code)
-	assert.Equal(t, "", w.Header().Get("Content-Type"))
-	assert.Equal(t, 0, w.Body.Len())
-}
-
-func TestSendResponseError(t *testing.T) {
-	w := httptest.NewRecorder()
-
-	errTitle := "Доступ запрещен"
-	errMessage := "У вас недостаточно прав"
-	appErr := netsp.AppError{
-		Code:   http.StatusBadRequest,
-		Detail: netsp.ErrorDetail{Title: errTitle, Message: errMessage, Solution: ""},
-	}
-
-	netsp.Write(w, appErr.Code, appErr.Detail)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
-
-	var out netsp.ErrorDetail
-	err := json.Unmarshal(w.Body.Bytes(), &out)
-	assert.NoError(t, err)
-
-	assert.Equal(t, errTitle, out.Title)
-	assert.Equal(t, errMessage, out.Message)
-	assert.Equal(t, "", out.Solution)
 }

@@ -13,66 +13,111 @@
 ### Install
 
 ```bash
-go get github.com/Aurivena/spond/v3@v3.0.2
+go get github.com/Aurivena/spond/v4@v4.0.0
 ```
 
 ---
 
-## Opportunities
+Возможности
 
-- A single JSON response format (success and error)
-- Easy expansion of the list of status codes and messages
-- Minimum dependencies, pure Go-style
+- **Единый формат ответа**: Использование универсальной структуры `Response[T]` для всех типов вывода.
+- **Поддержка нескольких протоколов**: Встроенные механизмы записи для HTTP, gRPC и WebSockets.
+- **Маппинг статус-кодов**: Бесшовный переход между внутренними кодами библиотеки, HTTP-статусами и кодами gRPC.
+- **Валидация ошибок**: Автоматическая проверка длины заголовков и сообщений об ошибках для поддержания консистентности API.
+- **Минимум зависимостей**: Чистый стиль Go с минимальным количеством внешних библиотек.
 
 ---
 
-## Usage example
-### Work with API-output
+## Примеры использования
+
+### 1. HTTP ответы
 
 ```go
 import (
     "net/http"
+    "github.com/Aurivena/spond/v3/netoutput"
     "github.com/Aurivena/spond/v3/netsp"
+    "github.com/Aurivena/spond/v3/netstatus"
 )
 
-//Success response
+// Успешный ответ
 func handler(w http.ResponseWriter, r *http.Request) {
     data := map[string]string{"foo": "bar"}
-    netsp.SendResponseSuccess(w, http.StatusOK, data)
+    resp := netsp.Response[any]{
+        Code: netstatus.CodeSuccess,
+        Data: data,
+    }
+    netoutput.WriteHTTP(w, resp)
 }
 
-//Error response
+// Ответ с ошибкой
 func errorHandler(w http.ResponseWriter, r *http.Request) {
-    // BuildError validates title and message lengths automatically
-    err := netsp.BuildError(
-        http.StatusBadRequest, 
-        "Invalid Input", 
-        "The provided data is incorrect", 
-        "Please check the documentation and try again",
-    )
-    netsp.SendResponseError(w, err)
+    errDetail := netsp.ErrorDetail{
+        Title:    "Invalid Input",
+        Message:  "The provided data is incorrect",
+        Solution: "Please check the documentation and try again",
+    }
+    // BuildError создает структуру Response с указанным кодом и данными ошибки
+    resp := netsp.BuildError(netstatus.CodeBadRequest, errDetail)
+    netoutput.WriteHTTP(w, *resp)
 }
 ```
 
-## Extension
-### Append new code output
+### 2. gRPC ответы
 
 ```go
-import "github.com/Aurivena/spond/v3/netsp"
+import (
+    "google.golang.org/grpc"
+    "github.com/Aurivena/spond/v3/netoutput"
+    "github.com/Aurivena/spond/v3/netsp"
+    "github.com/Aurivena/spond/v3/netstatus"
+)
 
-if err := netsp.AppendCode(418, "I'm a teapot"); err != nil {
-    log.Fatal(err)
+func grpcHandler(stream grpc.ServerStream) error {
+    data := "Hello World"
+    resp := netsp.Response[string]{
+        Code: netstatus.CodeSuccess,
+        Data: data,
+    }
+    return netoutput.WriteGRPC(stream, resp)
 }
 ```
-## Project Structure
+
+### 3. WebSocket ответы
+
+```go
+import (
+    "golang.org/x/net/websocket"
+    "github.com/Aurivena/spond/v3/netoutput"
+    "github.com/Aurivena/spond/v3/netsp"
+    "github.com/Aurivena/spond/v3/netstatus"
+)
+
+func wsHandler(conn *websocket.Conn) error {
+    resp := netsp.Response[string]{
+        Code: netstatus.CodeSuccess,
+        Data: "Connected!",
+    }
+    return netoutput.WriteWS(conn, resp)
+}
+```
+
+---
+
+## Структура проекта
 
 ```
 spond/
-├── netsp/        # Core logic: helpers, response builders, encoders
+├── netoutput/  # Транспорты: запись ответов для HTTP, gRPC и WebSocket
+├── netsp/       # Ядро: структуры Response, построение ошибок и валидация
+└── netstatus/  # Статус-коды и их маппинги (HTTP/gRPC)
 ```
-## Testing
+
+---
+
+## Тестирование
 
 ```bash
 go test ./...
 ```
-Unit tests are available for all main features.
+Юнит-тесты доступны для всех основных функций.
