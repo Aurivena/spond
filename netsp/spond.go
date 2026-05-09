@@ -3,8 +3,9 @@
 package netsp
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 )
 
@@ -23,57 +24,32 @@ func (e *AppError) Error() string {
 	return fmt.Sprintf("[%s] %s", e.Detail.Title, e.Detail.Message)
 }
 
-type WriteError struct {
-	Code  string   `json:"code"`
-	Error ErrorDTO `json:"error"`
-}
-
-type ErrorDTO struct {
-	Title    string `json:"title"`
-	Message  string `json:"message"`
-	Solution string `json:"solution"`
-}
-
-// SendResponseSuccess sends a successful JSON envelope.
-// status is the envelope status, is the payload for the client.
-// Generics Type usages for typing data
-func SendResponseSuccess[T any](w http.ResponseWriter, code int, data T) {
+func IsValid(code int) error {
 	if !isValid(code) {
-		log.Printf("[ERROR] SendResponseSuccess: status code %d does not exist", code)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+		return fmt.Errorf("invalid status code %d", code)
 	}
-
-	if code == http.StatusNoContent {
-		w.WriteHeader(int(code))
-		return
-	}
-
-	write(w, data, code)
+	return nil
 }
 
-// SendResponseError sends the error to the client as JSON.
-// err — structure with error details.
-func SendResponseError(w http.ResponseWriter, err *AppError) {
-	if err == nil {
-		return
-	}
-	if !isValid(int(err.Code)) {
-		log.Printf("[ERROR] SendResponseError: status code %d does not exist", err.Code)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+// Write encodes response as JSON and sends it to client.
+// Always sets Content-Type to application/json; charset=utf-8.
+func Write[T any](w http.ResponseWriter, code int, output T) {
+	if code == http.StatusNoContent {
+		w.WriteHeader(code)
 		return
 	}
 
-	output := &WriteError{
-		Code: statusMessages[err.Code],
-		Error: ErrorDTO{
-			Message:  err.Detail.Message,
-			Title:    err.Detail.Title,
-			Solution: err.Detail.Solution,
-		},
+	// set data for future json
+	var buff bytes.Buffer
+	if err := json.NewEncoder(&buff).Encode(output); err != nil {
+		// fallback: plain text error if JSON encoding fails
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	write(w, output, err.Code)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	w.Write(buff.Bytes())
 }
 
 // AppendCode adds a new status code and message to the statusMessages card.
@@ -90,19 +66,16 @@ func AppendCode(code int, message string) error {
 	return nil
 }
 
+func ValidateBuildError(code int, title, message, solution string) bool {
+	if err := validate(title, message); err != nil {
+		return false
+	}
+	return true
+}
+
 // BuildError forms an error structure for responding to the client.
 // If the input parameters do not pass validation, it returns an error with the UnprocessableEntity code.
 func BuildError(code int, title, message, solution string) *AppError {
-	if err := validate(title, message); err != nil {
-		return &AppError{
-			Code: http.StatusUnprocessableEntity,
-			Detail: ErrorDetail{
-				Title:    Invalid.Error(),
-				Message:  err.Error(),
-				Solution: SolutionError.Error(),
-			},
-		}
-	}
 	return &AppError{
 		Code: code,
 		Detail: ErrorDetail{

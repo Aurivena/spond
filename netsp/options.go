@@ -1,10 +1,7 @@
 package netsp
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"net/http"
 )
 
 const (
@@ -31,20 +28,4 @@ func validate(title, message string) error {
 		return MessageInvalid
 	}
 	return nil
-}
-
-// write encodes response as JSON and sends it to client.
-// Always sets Content-Type to application/json; charset=utf-8.
-func write(w http.ResponseWriter, output any, code int) {
-	// set data for future json
-	var buff bytes.Buffer
-	if err := json.NewEncoder(&buff).Encode(output); err != nil {
-		// fallback: plain text error if JSON encoding fails
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(code)
-	w.Write(buff.Bytes())
 }
